@@ -9,9 +9,11 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
-html{height:100%;overflow:hidden;}
-body{background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:'Share Tech Mono',monospace;height:100%;width:100%;}
-#c{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;}
+html,body{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;background:#000;}
+body{display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;}
+#c{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;
+  width:min(100vw, calc(100vh * 480 / 600));
+  height:min(100vh, calc(100vw * 600 / 480));}
 /* Leaderboard & name modal */
 #lb-overlay,#name-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(145deg,rgba(0,5,15,0.97),rgba(0,2,8,0.98));backdrop-filter:blur(20px);border-radius:12px;z-index:200;border:1px solid rgba(0,200,80,0.25);box-shadow:0 0 80px rgba(0,0,0,0.95),0 0 40px rgba(0,200,80,0.1);font-family:'Share Tech Mono',monospace;text-align:center;padding:32px 36px;min-width:340px;max-width:94vw;}
 #lb-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:11px;}
@@ -138,13 +140,6 @@ const ctx=canvas.getContext('2d');
 const W=480,H=600;
 canvas.width=W;canvas.height=H;
 const isMobile=()=>window.matchMedia('(hover:none) and (pointer:coarse)').matches;
-function scaleCanvas(){
-  const s=Math.min(window.innerWidth/W,window.innerHeight/H);
-  canvas.style.width=Math.floor(W*s)+'px';
-  canvas.style.height=Math.floor(H*s)+'px';
-}
-scaleCanvas();
-window.addEventListener('resize',scaleCanvas);
 
 // ── WIRE INTRO BUTTON ────────────────────────────────────────
 document.getElementById('intro-btn').addEventListener('click',function(){
@@ -1068,7 +1063,7 @@ let _pendingScore=null,_pendingLevel=null,_pendingDiff=null;
 
 async function fetchScores(){
   try{
-    const r=await fetch(FB_URL+'.json?orderBy="score"&limitToLast=100');
+    const r=await fetch(FB_URL+'.json');
     if(!r.ok)return[];
     const data=await r.json();
     if(!data)return[];
