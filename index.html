@@ -129,7 +129,10 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <tbody id="lb-body"></tbody>
     </table>
   </div>
-  <button id="lb-close-btn" class="glow-btn" style="font-size:12px;padding:12px 36px;"></button>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+    <button id="lb-menu-btn" class="ghost-btn" style="font-size:11px;padding:10px 20px;">← MENÚ PRINCIPAL</button>
+    <button id="lb-close-btn" class="glow-btn" style="font-size:12px;padding:12px 28px;"></button>
+  </div>
 </div>
 
 <script>
@@ -984,7 +987,7 @@ function runEndingScene(){
       ctx.fillStyle='#ffe040';ctx.font="bold 13px 'Orbitron',monospace";
       ctx.fillText('SCORE FINAL: '+score,cx,cy+86);
       ctx.globalAlpha=1;ctx.shadowBlur=0;
-      if(textAlpha>=1&&!msgShown){msgShown=true;setTimeout(()=>{cancelAnimationFrame(animId);const isNew=score>highScore;if(isNew){highScore=score;saveHS(highScore);}showNameModal(score,currentLevel,difficulty);},4500);}
+      if(textAlpha>=1&&!msgShown){msgShown=true;setTimeout(()=>{cancelAnimationFrame(animId);const isNew=score>highScore;if(isNew){highScore=score;saveHS(highScore);}handleGameOver(score,currentLevel,difficulty);},4500);}
     }
     if(!msgShown)animId=requestAnimationFrame(frame);
   }
@@ -1030,7 +1033,7 @@ function runDeathSequence(dx,dy){
     sparks.forEach(s=>{s.x+=s.vx;s.y+=s.vy;s.vy+=.05;s.vx*=.97;const sa=Math.max(0,1-prog*1.6);ctx.globalAlpha=sa;ctx.fillStyle=s.col;ctx.fillRect(s.x-1.5,s.y-1.5,3,3);});
     ctx.globalAlpha=1;drawHUD();t++;
     if(t<max){animId=requestAnimationFrame(frame);}
-    else{cancelAnimationFrame(animId);gameState='over';const isNew=score>highScore;if(isNew){highScore=score;saveHS(highScore);}showNameModal(score,currentLevel,difficulty);}
+    else{cancelAnimationFrame(animId);gameState='over';const isNew=score>highScore;if(isNew){highScore=score;saveHS(highScore);}handleGameOver(score,currentLevel,difficulty);}
   }
   animId=requestAnimationFrame(frame);
 }
@@ -1141,35 +1144,45 @@ canvas.addEventListener('touchmove',e=>{const r=getR(),t=e.touches[0];mousePos.x
 canvas.addEventListener('touchend',()=>mouseDown=false,{passive:true});
 
 // ── LEADERBOARD (Firebase REST) ───────────────────────────────
-// Replace with your Firebase Realtime Database URL (Project Settings → Realtime Database)
 const FB_URL='https://chuck-hazard-default-rtdb.firebaseio.com/scores';
+const TOP_N=9;
 let _pendingScore=null,_pendingLevel=null,_pendingDiff=null;
 
-async function fetchScores(){
+async function fetchAllScores(){
   try{
     const r=await fetch(FB_URL+'.json');
     if(!r.ok)return[];
     const data=await r.json();
     if(!data)return[];
-    return Object.entries(data).map(([k,v])=>({id:k,...v})).sort((a,b)=>b.score-a.score).slice(0,20);
+    return Object.entries(data).map(([k,v])=>({id:k,...v})).sort((a,b)=>b.score-a.score);
   }catch{return[];}
 }
 
-async function postScore(name,sc,lvl,diff){
-  try{
-    await fetch(FB_URL+'.json',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name.toUpperCase().trim().slice(0,12),score:sc,level:lvl,diff,ts:Date.now()})});
-  }catch{}
+async function pruneToTop9(all){
+  if(all.length<=TOP_N)return;
+  const toDelete=all.slice(TOP_N);
+  await Promise.all(toDelete.map(e=>fetch(FB_URL+'/'+e.id+'.json',{method:'DELETE'}).catch(()=>{})));
 }
 
-function showNameModal(sc,lvl,diff){
-  _pendingScore=sc;_pendingLevel=lvl;_pendingDiff=diff;
-  const nm=document.getElementById('name-modal');
-  const inp=document.getElementById('name-input');
-  inp.value='';
-  nm.style.display='block';
-  setTimeout(()=>inp.focus(),80);
-  inp.onkeydown=e=>{if(e.key==='Enter')submitScore();};
+async function handleGameOver(sc,lvl,diff){
+  const all=await fetchAllScores();
+  const top9=all.slice(0,TOP_N);
+  const qualifies=top9.length<TOP_N||sc>top9[top9.length-1].score;
+  if(qualifies){
+    _pendingScore=sc;_pendingLevel=lvl;_pendingDiff=diff;
+    const nm=document.getElementById('name-modal');
+    const inp=document.getElementById('name-input');
+    inp.value='';nm.style.display='block';
+    setTimeout(()=>inp.focus(),80);
+    inp.onkeydown=e=>{if(e.key==='Enter')submitScore();};
+  } else {
+    // Doesn't make top 9 — show plain game over
+    showMsg('MISIÓN FALLIDA',
+      'Score: '+sc+'<br>Mejor: '+highScore+
+      '<br><br><span style="color:#f80;font-size:11px;">No alcanzaste el Top '+TOP_N+' global.</span>'+
+      '<br><span style="font-size:11px;color:#555;cursor:pointer;text-decoration:underline;" onclick="showMenu()">⬅ Menú principal</span>',
+      'REINTENTAR',()=>startGame());
+  }
 }
 
 async function submitScore(){
@@ -1178,7 +1191,12 @@ async function submitScore(){
   const name=(inp.value||'').trim();
   if(!name){inp.focus();return;}
   nm.style.display='none';
-  await postScore(name,_pendingScore,_pendingLevel,_pendingDiff);
+  try{
+    await fetch(FB_URL+'.json',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:name.toUpperCase().trim().slice(0,12),score:_pendingScore,level:_pendingLevel,diff:_pendingDiff,ts:Date.now()})});
+    const all=await fetchAllScores();
+    await pruneToTop9(all);
+  }catch{}
   openLeaderboard(_pendingScore,name);
 }
 
@@ -1187,15 +1205,21 @@ function skipToLeaderboard(){
   openLeaderboard(null,null);
 }
 
+function closeLbOverlay(retry){
+  document.getElementById('lb-overlay').style.display='none';
+  _pendingScore=null;
+  if(retry)startGame();else showMenu();
+}
+
 async function openLeaderboard(myScore,myName){
   const overlay=document.getElementById('lb-overlay');
   const body=document.getElementById('lb-body');
   const rankEl=document.getElementById('lb-player-rank');
   const closeBtn=document.getElementById('lb-close-btn');
+  const menuBtn=document.getElementById('lb-menu-btn');
   body.innerHTML='<tr><td colspan="5" style="color:#334455;padding:20px;text-align:center;letter-spacing:2px;">CARGANDO...</td></tr>';
-  rankEl.textContent='';
-  overlay.style.display='block';
-  const rows=await fetchScores();
+  rankEl.textContent='';overlay.style.display='block';
+  const rows=(await fetchAllScores()).slice(0,TOP_N);
   body.innerHTML='';
   let myRank=null;
   rows.forEach((row,i)=>{
@@ -1212,18 +1236,7 @@ async function openLeaderboard(myScore,myName){
   else if(myScore)rankEl.textContent='SCORE: '+myScore;
   const isFromGame=_pendingScore!==null;
   closeBtn.textContent=isFromGame?'REINTENTAR':'CERRAR';
-  closeBtn.onclick=()=>{
-    overlay.style.display='none';
-    _pendingScore=null;
-    if(isFromGame)startGame();
-  };
+  closeBtn.onclick=()=>closeLbOverlay(isFromGame);
+  menuBtn.onclick=()=>closeLbOverlay(false);
 }
-
-function gameOverWithLeaderboard(title,bodyHtml,isWin){
-  document.getElementById('msg').style.display='none';
-  showNameModal(score,currentLevel,difficulty);
-  // store win state for retry button
-  _pendingIsWin=isWin;
-}
-let _pendingIsWin=false;
 </script>
