@@ -140,11 +140,12 @@ canvas.width=W;canvas.height=H;
 const isMobile=()=>window.matchMedia('(hover:none) and (pointer:coarse)').matches;
 function scaleCanvas(){
   const s=Math.min(window.innerWidth/W,window.innerHeight/H);
-  canvas.style.transform='scale('+s+')';
-  canvas.style.transformOrigin='center center';
+  canvas.style.width=Math.round(W*s)+'px';
+  canvas.style.height=Math.round(H*s)+'px';
 }
-scaleCanvas();
+window.addEventListener('load',scaleCanvas);
 window.addEventListener('resize',scaleCanvas);
+scaleCanvas();
 
 // ── WIRE INTRO BUTTON ────────────────────────────────────────
 document.getElementById('intro-btn').addEventListener('click',function(){
@@ -401,13 +402,16 @@ function drawSun(x,y,r,si){
   const gs=ctx.createRadialGradient(x-r*.3,y-r*.3,r*.05,x,y,r);gs.addColorStop(0,'#fff8e0');gs.addColorStop(.4,si?'#ff8800':'#ffcc00');gs.addColorStop(1,si?'#cc4400':'#ff6600');ctx.fillStyle=gs;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
 }
 // The expanding Sun — gets smaller and redder as Chuck flees
+// Sun on the OPPOSITE side of each level's planet
+// L1 planet→right(W*.78), L2 planet→left(W*.18), L3 planet→right(W*.72)
+// L4 planet→right(W*.65), L5 planet→center(W*.5), L6 black hole→center
 const SUN_DATA=[
-  {x:W*.84,y:52, r:62, core:'#fffde0',mid:'#ffe060',edge:'#ff8800',glow:'rgba(255,200,60,',glowR:3.8},
-  {x:W*.14,y:60, r:46, core:'#fff8c0',mid:'#ffd040',edge:'#ff6600',glow:'rgba(255,170,40,',glowR:3.5},
-  {x:W*.82,y:48, r:33, core:'#ffe090',mid:'#ffb030',edge:'#ee5500',glow:'rgba(255,140,30,',glowR:3.2},
-  {x:W*.16,y:54, r:22, core:'#ffcc70',mid:'#ff8820',edge:'#cc3300',glow:'rgba(220,100,20,',glowR:3.0},
-  {x:W*.8, y:46, r:13, core:'#ff9940',mid:'#ee5500',edge:'#aa1100',glow:'rgba(180,60,10,', glowR:2.8},
-  {x:W*.14,y:52, r:7,  core:'#dd3300',mid:'#aa1100',edge:'#660000',glow:'rgba(140,20,0,',  glowR:2.5},
+  {x:W*.1, y:62, r:78, core:'#ffffff',mid:'#ffe880',edge:'#ff9900',glow:'rgba(255,210,80,', glowR:4.2},
+  {x:W*.88,y:58, r:54, core:'#fffce0',mid:'#ffd040',edge:'#ff7700',glow:'rgba(255,180,50,', glowR:3.8},
+  {x:W*.1, y:56, r:38, core:'#fff0a0',mid:'#ffb030',edge:'#ee5500',glow:'rgba(255,150,40,', glowR:3.4},
+  {x:W*.12,y:58, r:26, core:'#ffcc60',mid:'#ff8020',edge:'#cc3300',glow:'rgba(220,100,20,', glowR:3.0},
+  {x:W*.88,y:54, r:16, core:'#ff9930',mid:'#ee4400',edge:'#aa1000',glow:'rgba(190,70,10,',  glowR:2.7},
+  {x:W*.9, y:56, r:8,  core:'#cc2200',mid:'#880000',edge:'#550000',glow:'rgba(130,15,0,',   glowR:2.4},
 ];
 function drawExpansionSun(lvl){
   const sd=SUN_DATA[lvl-1],t=Date.now()*.0008,pulse=1+Math.sin(t)*0.04;
