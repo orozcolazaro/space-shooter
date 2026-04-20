@@ -872,7 +872,7 @@ function initLevel(lvl){
 
 // ── VICTORY BARREL ROLL ───────────────────────────────────────
 function runVictoryAnim(lvl,onDone){
-  let t=0;const max=150,L=LEVELS[lvl-1];
+  let t=0;const max=180,L=LEVELS[lvl-1];
   function frame(){
     const prog=t/max;
     ctx.fillStyle=L.bg;ctx.fillRect(0,0,W,H);
@@ -887,6 +887,26 @@ function runVictoryAnim(lvl,onDone){
     particles.forEach(pt=>{pt.x+=pt.vx;pt.y+=pt.vy;pt.life--;ctx.globalAlpha=pt.life/50;ctx.fillStyle=pt.col;ctx.fillRect(pt.x-1.5,pt.y-1.5,3,3);});
     particles=particles.filter(p=>p.life>0);ctx.globalAlpha=1;
     if(prog>.38&&prog<.62){for(let i=0;i<2;i++)particles.push({x:sx+Math.cos(Math.random()*Math.PI*2)*40,y:y+Math.sin(Math.random()*Math.PI*2)*20,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,life:25,col:'#ff0'});}
+    // Victory banner — fades in at 40% of animation
+    if(prog>0.4){
+      const ta=Math.min(1,(prog-0.4)/0.15);
+      const bx=W/2,by=H/2+20;
+      ctx.globalAlpha=ta*0.82;
+      ctx.fillStyle='rgba(0,5,15,0.85)';
+      ctx.fillRect(bx-185,by-52,370,90);
+      ctx.strokeStyle='rgba(0,255,100,0.4)';ctx.lineWidth=1;ctx.strokeRect(bx-185,by-52,370,90);
+      ctx.globalAlpha=ta;ctx.textAlign='center';
+      ctx.fillStyle='#ffe040';ctx.shadowColor='#ffe040';ctx.shadowBlur=14;
+      ctx.font="bold 11px 'Orbitron',monospace";ctx.letterSpacing='3px';
+      ctx.fillText('⚔  ¡HAS DERROTADO A '+L.subtitle.toUpperCase()+'!  ⚔',bx,by-26);
+      ctx.fillStyle='#00ff64';ctx.shadowColor='#00ff64';ctx.shadowBlur=18;
+      ctx.font="bold 19px 'Orbitron',monospace";
+      ctx.fillText('SECTOR LIBERADO',bx,by+4);
+      ctx.fillStyle='rgba(150,200,160,0.7)';ctx.shadowBlur=0;
+      ctx.font="12px 'Share Tech Mono',monospace";
+      ctx.fillText('+1000 PTS  ·  CONTINÚA LA MISIÓN',bx,by+28);
+      ctx.globalAlpha=1;ctx.shadowBlur=0;
+    }
     drawHUD();t++;
     if(t<max)animId=requestAnimationFrame(frame);else onDone();
   }
@@ -901,16 +921,25 @@ function runEndingScene(){
   [[261.6,4],[329.6,4],[392,4],[523.2,6],[392,3],[329.6,3],[261.6,8]].forEach(([f,d],i)=>{
     const st=t0+[0,2,4,6,9,12,15][i];mkosc(f,'sine',.14,st,d);mkosc(f/2,'sine',.07,st,d);
   });
-  let sceneT=0,phase='approach',landingDone=false,textAlpha=0,msgShown=false;
+  let sceneT=0,phase='approach',landingDone=false,textAlpha=0,msgShown=false,celebAlpha=0;
   const ship={x:W/2,y:-60},planet={x:W/2,y:H*.55,r:0,rot:0},cp=[];
   const clouds=[{ox:-60,oy:-40,w:55,h:18},{ox:30,oy:-20,w:45,h:15},{ox:-20,oy:30,w:60,h:16}];
+  // Confetti pieces
+  const confetti=[];
+  const CONF_COLS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff6bdb','#ffffff','#ff9f43','#00d2d3'];
+  function spawnConfetti(n){for(let i=0;i<n;i++)confetti.push({x:Math.random()*W,y:-10-Math.random()*30,vx:(Math.random()-.5)*3,vy:Math.random()*2+1.5,rot:Math.random()*Math.PI*2,rv:(Math.random()-.5)*.18,w:5+Math.random()*7,h:3+Math.random()*4,col:CONF_COLS[Math.floor(Math.random()*CONF_COLS.length)]});}
 
   function frame(){
     sceneT++;planet.rot+=0.003;
     if(phase==='approach'){planet.r=Math.min(130,planet.r+1.2);ship.y=Math.min(H*.25,ship.y+2.5);if(planet.r>=130&&ship.y>=H*.25)phase='descend';}
     else if(phase==='descend'){ship.y+=1.8;ship.x=W/2+Math.sin(sceneT*.04)*30;if(ship.y>H*.62)phase='land';}
     else if(phase==='land'){ship.y=Math.min(H*.68,ship.y+.8);if(!landingDone&&ship.y>=H*.68){landingDone=true;for(let i=0;i<50;i++){const a=Math.random()*Math.PI*2,sp=Math.random()*5+1;cp.push({x:ship.x,y:ship.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,life:80+Math.random()*40,col:['#0f0','#4f8','#4af','#ff0','#fff'][Math.floor(Math.random()*5)]});}phase='celebrate';}}
-    else if(phase==='celebrate'){textAlpha=Math.min(1,textAlpha+.012);if(sceneT%22===0)for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2,sp=Math.random()*4+1;cp.push({x:ship.x+(Math.random()-.5)*60,y:ship.y+(Math.random()-.5)*20,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,life:60+Math.random()*30,col:['#0f0','#4f8','#ff0','#4af'][Math.floor(Math.random()*4)]});}}
+    else if(phase==='celebrate'){
+      textAlpha=Math.min(1,textAlpha+.012);
+      celebAlpha=Math.min(1,celebAlpha+.008);
+      if(sceneT%18===0){for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2,sp=Math.random()*4+1;cp.push({x:ship.x+(Math.random()-.5)*60,y:ship.y+(Math.random()-.5)*20,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,life:60+Math.random()*30,col:['#0f0','#4f8','#ff0','#4af'][Math.floor(Math.random()*4)]});}}
+      if(sceneT%8===0)spawnConfetti(6);
+    }
 
     // draw scene
     ctx.fillStyle='#000510';ctx.fillRect(0,0,W,H);
@@ -931,15 +960,31 @@ function runEndingScene(){
     }
     cp.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life--;ctx.globalAlpha=p.life/80;ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,2,0,Math.PI*2);ctx.fill();});
     cp.splice(0,cp.length,...cp.filter(p=>p.life>0));ctx.globalAlpha=1;
+    // Confetti
+    confetti.forEach(c=>{c.x+=c.vx;c.y+=c.vy;c.rot+=c.rv;c.vy+=.04;ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.rot);ctx.fillStyle=c.col;ctx.fillRect(-c.w/2,-c.h/2,c.w,c.h);ctx.restore();});
+    confetti.splice(0,confetti.length,...confetti.filter(c=>c.y<H+20));
     drawShipAt(ship.x,ship.y,0);
     if(textAlpha>0){
+      const cx=W/2,cy=H*.14;
       ctx.globalAlpha=textAlpha;ctx.textAlign='center';
-      ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(W/2-180,H*.12,360,100);
-      ctx.fillStyle='#fff';ctx.font='bold 22px monospace';ctx.fillText('MISIÓN CUMPLIDA',W/2,H*.18);
-      ctx.fillStyle='#0f0';ctx.font='13px monospace';ctx.fillText('Chuck Hazard ha llegado.',W/2,H*.23);
-      ctx.fillStyle='#aaa';ctx.font='12px monospace';ctx.fillText('La humanidad tiene un nuevo hogar.',W/2,H*.28);
-      ctx.globalAlpha=1;
-      if(textAlpha>=1&&!msgShown){msgShown=true;setTimeout(()=>{cancelAnimationFrame(animId);const isNew=score>highScore;if(isNew){highScore=score;saveHS(highScore);}showNameModal(score,currentLevel,difficulty);},3000);}
+      // Celebration panel
+      ctx.fillStyle='rgba(0,5,15,0.88)';ctx.fillRect(cx-195,cy-38,390,120);
+      ctx.strokeStyle='rgba(0,255,100,0.35)';ctx.lineWidth=1;ctx.strokeRect(cx-195,cy-38,390,120);
+      // Star burst glow
+      ctx.shadowColor='#00ff64';ctx.shadowBlur=30;
+      ctx.fillStyle='#00ff64';ctx.font="bold 22px 'Orbitron',monospace";
+      ctx.fillText('🌍 ¡MISIÓN CUMPLIDA!',cx,cy);
+      ctx.shadowBlur=0;
+      ctx.fillStyle='rgba(255,220,80,0.9)';ctx.font="bold 11px 'Orbitron',monospace";
+      ctx.fillText('¡FELICIDADES, COMANDANTE!',cx,cy+24);
+      ctx.fillStyle='rgba(180,220,180,0.75)';ctx.font="11px 'Share Tech Mono',monospace";
+      ctx.fillText('Chuck Hazard ha salvado a la humanidad.',cx,cy+44);
+      ctx.fillStyle='rgba(100,180,140,0.6)';ctx.font="11px 'Share Tech Mono',monospace";
+      ctx.fillText('Un nuevo hogar bajo un sol que no se expande.',cx,cy+62);
+      ctx.fillStyle='#ffe040';ctx.font="bold 13px 'Orbitron',monospace";
+      ctx.fillText('SCORE FINAL: '+score,cx,cy+86);
+      ctx.globalAlpha=1;ctx.shadowBlur=0;
+      if(textAlpha>=1&&!msgShown){msgShown=true;setTimeout(()=>{cancelAnimationFrame(animId);const isNew=score>highScore;if(isNew){highScore=score;saveHS(highScore);}showNameModal(score,currentLevel,difficulty);},4500);}
     }
     if(!msgShown)animId=requestAnimationFrame(frame);
   }
