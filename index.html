@@ -11,9 +11,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;background:#000;}
 body{display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;}
-#c{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;
-  width:min(100vw, calc(100vh * 480 / 600));
-  height:min(100vh, calc(100vw * 600 / 480));}
+#c{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;}
 /* Leaderboard & name modal */
 #lb-overlay,#name-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(145deg,rgba(0,5,15,0.97),rgba(0,2,8,0.98));backdrop-filter:blur(20px);border-radius:12px;z-index:200;border:1px solid rgba(0,200,80,0.25);box-shadow:0 0 80px rgba(0,0,0,0.95),0 0 40px rgba(0,200,80,0.1);font-family:'Share Tech Mono',monospace;text-align:center;padding:32px 36px;min-width:340px;max-width:94vw;}
 #lb-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:11px;}
@@ -140,6 +138,13 @@ const ctx=canvas.getContext('2d');
 const W=480,H=600;
 canvas.width=W;canvas.height=H;
 const isMobile=()=>window.matchMedia('(hover:none) and (pointer:coarse)').matches;
+function scaleCanvas(){
+  const s=Math.min(window.innerWidth/W,window.innerHeight/H);
+  canvas.style.transform='scale('+s+')';
+  canvas.style.transformOrigin='center center';
+}
+scaleCanvas();
+window.addEventListener('resize',scaleCanvas);
 
 // ── WIRE INTRO BUTTON ────────────────────────────────────────
 document.getElementById('intro-btn').addEventListener('click',function(){
@@ -297,6 +302,7 @@ const DUST4=Array.from({length:35},()=>({x:Math.random()*W,y:Math.random()*H,r:.
 function drawBG(lvl,tw){
   const L=LEVELS[lvl-1],p=PLN[lvl-1];
   ctx.fillStyle=L.bg;ctx.fillRect(0,0,W,H);
+  drawExpansionSun(lvl);
   // Nebula wisps per level
   if(lvl===2){const t=Date.now()*.0002;[[60,120,'rgba(80,0,160,0.055)'],[350,200,'rgba(100,0,200,0.04)'],[180,350,'rgba(60,0,130,0.05)']].forEach(([nx,ny,nc])=>{const ng=ctx.createRadialGradient(nx,ny,0,nx,ny,90+Math.sin(t)*15);ng.addColorStop(0,nc);ng.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=ng;ctx.beginPath();ctx.ellipse(nx,ny,90,55,t*.3,0,Math.PI*2);ctx.fill();});}
   if(lvl===3){const t=Date.now()*.00015;[[80,180,'rgba(160,0,40,0.05)'],[380,280,'rgba(200,0,60,0.04)']].forEach(([nx,ny,nc])=>{const ng=ctx.createRadialGradient(nx,ny,0,nx,ny,80);ng.addColorStop(0,nc);ng.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=ng;ctx.beginPath();ctx.ellipse(nx,ny,80,50,t*.2,0,Math.PI*2);ctx.fill();});}
@@ -393,6 +399,33 @@ function drawHabitablePlanet(x,y,r,rot,rot2){
 function drawSun(x,y,r,si){
   const gc=ctx.createRadialGradient(x,y,r*.5,x,y,r*3.2);gc.addColorStop(0,si?'rgba(255,120,0,0.2)':'rgba(255,200,0,0.22)');gc.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=gc;ctx.beginPath();ctx.arc(x,y,r*3.2,0,Math.PI*2);ctx.fill();
   const gs=ctx.createRadialGradient(x-r*.3,y-r*.3,r*.05,x,y,r);gs.addColorStop(0,'#fff8e0');gs.addColorStop(.4,si?'#ff8800':'#ffcc00');gs.addColorStop(1,si?'#cc4400':'#ff6600');ctx.fillStyle=gs;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+}
+// The expanding Sun — gets smaller and redder as Chuck flees
+const SUN_DATA=[
+  {x:W*.84,y:52, r:62, core:'#fffde0',mid:'#ffe060',edge:'#ff8800',glow:'rgba(255,200,60,',glowR:3.8},
+  {x:W*.14,y:60, r:46, core:'#fff8c0',mid:'#ffd040',edge:'#ff6600',glow:'rgba(255,170,40,',glowR:3.5},
+  {x:W*.82,y:48, r:33, core:'#ffe090',mid:'#ffb030',edge:'#ee5500',glow:'rgba(255,140,30,',glowR:3.2},
+  {x:W*.16,y:54, r:22, core:'#ffcc70',mid:'#ff8820',edge:'#cc3300',glow:'rgba(220,100,20,',glowR:3.0},
+  {x:W*.8, y:46, r:13, core:'#ff9940',mid:'#ee5500',edge:'#aa1100',glow:'rgba(180,60,10,', glowR:2.8},
+  {x:W*.14,y:52, r:7,  core:'#dd3300',mid:'#aa1100',edge:'#660000',glow:'rgba(140,20,0,',  glowR:2.5},
+];
+function drawExpansionSun(lvl){
+  const sd=SUN_DATA[lvl-1],t=Date.now()*.0008,pulse=1+Math.sin(t)*0.04;
+  const r=sd.r*pulse,x=sd.x,y=sd.y;
+  // Ambient screen glow (subtle, very large)
+  const ag=ctx.createRadialGradient(x,y,r,x,y,r*8);
+  ag.addColorStop(0,sd.glow+'0.07)');ag.addColorStop(1,sd.glow+'0)');
+  ctx.fillStyle=ag;ctx.beginPath();ctx.arc(x,y,r*8,0,Math.PI*2);ctx.fill();
+  // Corona
+  const cg=ctx.createRadialGradient(x,y,r*.6,x,y,r*sd.glowR);
+  cg.addColorStop(0,sd.glow+'0.35)');cg.addColorStop(.5,sd.glow+'0.12)');cg.addColorStop(1,sd.glow+'0)');
+  ctx.fillStyle=cg;ctx.beginPath();ctx.arc(x,y,r*sd.glowR,0,Math.PI*2);ctx.fill();
+  // Body
+  const bg=ctx.createRadialGradient(x-r*.3,y-r*.3,r*.08,x,y,r);
+  bg.addColorStop(0,sd.core);bg.addColorStop(.45,sd.mid);bg.addColorStop(1,sd.edge);
+  ctx.fillStyle=bg;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  // Highlight
+  ctx.fillStyle='rgba(255,255,255,0.18)';ctx.beginPath();ctx.arc(x-r*.28,y-r*.28,r*.38,0,Math.PI*2);ctx.fill();
 }
 function drawBlackHole(x,y,r,diskAngle,tw){
   for(let i=0;i<3;i++){const lr=r*1.18+i*12,lg=ctx.createRadialGradient(x,y,lr-5,x,y,lr+5);lg.addColorStop(0,'rgba(255,255,255,0)');lg.addColorStop(.5,`rgba(255,255,${200+i*18},${0.055-i*0.012})`);lg.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=lg;ctx.beginPath();ctx.arc(x,y,lr+5,0,Math.PI*2);ctx.fill();}
@@ -815,7 +848,10 @@ function showMsg(title,sub,btnTxt,btnFn){
 
 // ── GAME FLOW ─────────────────────────────────────────────────
 function startGame(){
-  initAudio();['menu','msg','story'].forEach(id=>document.getElementById(id).style.display='none');
+  initAudio();cancelAnimationFrame(animId);gameState='idle';
+  ['menu','msg','story','name-modal','lb-overlay'].forEach(id=>document.getElementById(id).style.display='none');
+  enemies=[];bullets=[];particles=[];powerups=[];
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
   score=0;showStory(1,()=>initLevel(1));
 }
 function startLevel(lvl){['msg','story'].forEach(id=>document.getElementById(id).style.display='none');showStory(lvl,()=>initLevel(lvl));}
