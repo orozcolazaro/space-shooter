@@ -1,7 +1,16 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Chuck Hazard — Operación Éxodo Solar</title>
+</head>
+<body>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:'Share Tech Mono',monospace;height:100vh;width:100vw;}
+html{height:100%;overflow:hidden;}
+body{background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:'Share Tech Mono',monospace;height:100%;width:100%;}
 #c{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;}
 /* Leaderboard & name modal */
 #lb-overlay,#name-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(145deg,rgba(0,5,15,0.97),rgba(0,2,8,0.98));backdrop-filter:blur(20px);border-radius:12px;z-index:200;border:1px solid rgba(0,200,80,0.25);box-shadow:0 0 80px rgba(0,0,0,0.95),0 0 40px rgba(0,200,80,0.1);font-family:'Share Tech Mono',monospace;text-align:center;padding:32px 36px;min-width:340px;max-width:94vw;}
@@ -193,9 +202,12 @@ let _miv=null,_biv=null,_bosiv=null;
 function initAudio(){
   if(AC)return;
   AC=new(window.AudioContext||window.webkitAudioContext)();
+  AC.resume();
   musicGain=AC.createGain();musicGain.gain.value=0.18;musicGain.connect(AC.destination);
   sfxGain=AC.createGain();sfxGain.gain.value=0.4;sfxGain.connect(AC.destination);
 }
+// iOS/Android: resume suspended AudioContext on any touch
+document.addEventListener('touchstart',()=>{if(AC&&AC.state==='suspended')AC.resume();},{once:false,passive:true});
 function stopMusic(){
   musicNodes.forEach(n=>{try{n.stop();}catch(e){}});
   musicNodes=[];clearInterval(_miv);clearInterval(_biv);clearInterval(_bosiv);
@@ -711,9 +723,9 @@ function drawHUD(){
   // Level / difficulty center
   ctx.textAlign='center';ctx.fillStyle='rgba(100,110,160,0.6)';ctx.font='8px monospace';ctx.fillText('NVL '+currentLevel+' · '+L.subtitle,W/2,14);
   ctx.fillStyle=D.col;ctx.shadowColor=D.col;ctx.shadowBlur=8;ctx.font='bold 11px monospace';ctx.fillText(D.label,W/2,30);ctx.shadowBlur=0;
-  // Pause button — background box + icon
+  // Pause button — background box + icon (positioned left of lives area)
   const isPaused=gameState==='paused';
-  const pbx=W-88,pby=4,pbw=36,pbh=34;
+  const pbx=W-136,pby=4,pbw=36,pbh=34;
   ctx.fillStyle=isPaused?'rgba(0,255,100,0.15)':'rgba(0,60,20,0.35)';
   ctx.fillRect(pbx,pby,pbw,pbh);
   ctx.strokeStyle=isPaused?'rgba(0,255,100,0.7)':'rgba(0,200,80,0.3)';
@@ -1040,12 +1052,12 @@ function loop(){
 // ── INPUT ─────────────────────────────────────────────────────
 const getR=()=>canvas.getBoundingClientRect();
 canvas.addEventListener('mousemove',e=>{const r=getR();mousePos.x=(e.clientX-r.left)*(W/r.width);mousePos.y=(e.clientY-r.top)*(H/r.height);});
-canvas.addEventListener('mousedown',e=>{if(e.button!==0)return;const r=getR(),cx=(e.clientX-r.left)*(W/r.width),cy=(e.clientY-r.top)*(H/r.height);if(cx>=W-88&&cx<=W-52&&cy>=4&&cy<=38&&(gameState==='playing'||gameState==='paused')){togglePause();return;}mouseDown=true;});
+canvas.addEventListener('mousedown',e=>{if(e.button!==0)return;const r=getR(),cx=(e.clientX-r.left)*(W/r.width),cy=(e.clientY-r.top)*(H/r.height);if(cx>=W-136&&cx<=W-100&&cy>=4&&cy<=38&&(gameState==='playing'||gameState==='paused')){togglePause();return;}mouseDown=true;});
 canvas.addEventListener('mouseup',()=>mouseDown=false);
 canvas.addEventListener('mouseleave',()=>mouseDown=false);
 document.addEventListener('keydown',e=>{keys[e.key]=true;if([' ','ArrowUp','ArrowDown'].includes(e.key))e.preventDefault();if((e.key==='Escape'||e.key==='p'||e.key==='P')&&(gameState==='playing'||gameState==='paused'))togglePause();});
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
-canvas.addEventListener('touchstart',e=>{const r=getR(),t=e.touches[0],cx=(t.clientX-r.left)*(W/r.width),cy=(t.clientY-r.top)*(H/r.height);if(cx>=W-88&&cx<=W-52&&cy>=4&&cy<=38&&(gameState==='playing'||gameState==='paused')){togglePause();return;}mousePos.x=cx;mousePos.y=cy;mouseDown=true;},{passive:true});
+canvas.addEventListener('touchstart',e=>{const r=getR(),t=e.touches[0],cx=(t.clientX-r.left)*(W/r.width),cy=(t.clientY-r.top)*(H/r.height);if(cx>=W-136&&cx<=W-100&&cy>=4&&cy<=38&&(gameState==='playing'||gameState==='paused')){togglePause();return;}mousePos.x=cx;mousePos.y=cy;mouseDown=true;},{passive:true});
 canvas.addEventListener('touchmove',e=>{const r=getR(),t=e.touches[0];mousePos.x=(t.clientX-r.left)*(W/r.width);mousePos.y=(t.clientY-r.top)*(H/r.height);},{passive:true});
 canvas.addEventListener('touchend',()=>mouseDown=false,{passive:true});
 
