@@ -644,6 +644,11 @@ function drawHUD(){
   // Level / difficulty center
   ctx.textAlign='center';ctx.fillStyle='rgba(100,110,160,0.6)';ctx.font='8px monospace';ctx.fillText('NVL '+currentLevel+' · '+L.subtitle,W/2,14);
   ctx.fillStyle=D.col;ctx.shadowColor=D.col;ctx.shadowBlur=8;ctx.font='bold 11px monospace';ctx.fillText(D.label,W/2,30);ctx.shadowBlur=0;
+  // Pause icon (two bars when playing, triangle when paused)
+  const pCol=gameState==='paused'?'#00ff64':'rgba(0,200,80,0.45)';
+  ctx.fillStyle=pCol;
+  if(gameState==='paused'){ctx.beginPath();ctx.moveTo(W-79,10);ctx.lineTo(W-79,30);ctx.lineTo(W-63,20);ctx.closePath();ctx.fill();}
+  else{ctx.fillRect(W-79,10,6,20);ctx.fillRect(W-69,10,6,20);}
   // Lives
   ctx.textAlign='right';ctx.fillStyle='rgba(160,0,0,0.45)';ctx.font='8px monospace';ctx.fillText('VIDAS',W-10,13);
   for(let i=0;i<3;i++){if(i<lives){ctx.shadowColor='#ff4444';ctx.shadowBlur=12;}else ctx.shadowBlur=0;ctx.fillStyle=i<lives?'#ff4444':'rgba(60,0,0,0.5)';ctx.font='17px sans-serif';ctx.textAlign='right';ctx.fillText('♥',W-9-i*22,32);}ctx.shadowBlur=0;
@@ -867,6 +872,28 @@ function runDeathSequence(dx,dy){
   animId=requestAnimationFrame(frame);
 }
 
+// ── PAUSE ─────────────────────────────────────────────────────
+function togglePause(){
+  if(gameState==='playing'){
+    gameState='paused';
+    cancelAnimationFrame(animId);
+    drawPauseOverlay();
+  } else if(gameState==='paused'){
+    gameState='playing';
+    loop();
+  }
+}
+function drawPauseOverlay(){
+  ctx.fillStyle='rgba(0,5,15,0.78)';ctx.fillRect(0,42,W,H-42);
+  ctx.textAlign='center';
+  ctx.fillStyle='#00ff64';ctx.shadowColor='#00ff64';ctx.shadowBlur=28;
+  ctx.font="bold 34px 'Orbitron',monospace";ctx.fillText('PAUSA',W/2,H/2-12);
+  ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(80,130,90,0.7)';ctx.font='12px monospace';
+  ctx.fillText('ESC · P · ▶ para continuar',W/2,H/2+22);
+  drawHUD();
+}
+
 // ── MAIN LOOP ─────────────────────────────────────────────────
 function loop(){
   if(gameState!=='playing')return;
@@ -941,12 +968,12 @@ function loop(){
 // ── INPUT ─────────────────────────────────────────────────────
 const getR=()=>canvas.getBoundingClientRect();
 canvas.addEventListener('mousemove',e=>{const r=getR();mousePos.x=(e.clientX-r.left)*(W/r.width);mousePos.y=(e.clientY-r.top)*(H/r.height);});
-canvas.addEventListener('mousedown',e=>{if(e.button===0)mouseDown=true;});
+canvas.addEventListener('mousedown',e=>{if(e.button!==0)return;const r=getR(),cx=(e.clientX-r.left)*(W/r.width),cy=(e.clientY-r.top)*(H/r.height);if(cx>=W-82&&cx<=W-60&&cy>=4&&cy<=36&&(gameState==='playing'||gameState==='paused')){togglePause();return;}mouseDown=true;});
 canvas.addEventListener('mouseup',()=>mouseDown=false);
 canvas.addEventListener('mouseleave',()=>mouseDown=false);
-document.addEventListener('keydown',e=>{keys[e.key]=true;if([' ','ArrowUp','ArrowDown'].includes(e.key))e.preventDefault();});
+document.addEventListener('keydown',e=>{keys[e.key]=true;if([' ','ArrowUp','ArrowDown'].includes(e.key))e.preventDefault();if((e.key==='Escape'||e.key==='p'||e.key==='P')&&(gameState==='playing'||gameState==='paused'))togglePause();});
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
-canvas.addEventListener('touchstart',e=>{const r=getR(),t=e.touches[0];mousePos.x=(t.clientX-r.left)*(W/r.width);mousePos.y=(t.clientY-r.top)*(H/r.height);mouseDown=true;},{passive:true});
+canvas.addEventListener('touchstart',e=>{const r=getR(),t=e.touches[0],cx=(t.clientX-r.left)*(W/r.width),cy=(t.clientY-r.top)*(H/r.height);if(cx>=W-82&&cx<=W-60&&cy>=4&&cy<=36&&(gameState==='playing'||gameState==='paused')){togglePause();return;}mousePos.x=cx;mousePos.y=cy;mouseDown=true;},{passive:true});
 canvas.addEventListener('touchmove',e=>{const r=getR(),t=e.touches[0];mousePos.x=(t.clientX-r.left)*(W/r.width);mousePos.y=(t.clientY-r.top)*(H/r.height);},{passive:true});
 canvas.addEventListener('touchend',()=>mouseDown=false,{passive:true});
 </script>
