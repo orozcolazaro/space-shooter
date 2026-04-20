@@ -3,6 +3,16 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:'Share Tech Mono',monospace;height:100vh;width:100vw;}
 #c{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;}
+/* Leaderboard & name modal */
+#lb-overlay,#name-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(145deg,rgba(0,5,15,0.97),rgba(0,2,8,0.98));backdrop-filter:blur(20px);border-radius:12px;z-index:200;border:1px solid rgba(0,200,80,0.25);box-shadow:0 0 80px rgba(0,0,0,0.95),0 0 40px rgba(0,200,80,0.1);font-family:'Share Tech Mono',monospace;text-align:center;padding:32px 36px;min-width:340px;max-width:94vw;}
+#lb-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:11px;}
+#lb-table th{color:rgba(0,200,80,0.5);font-size:9px;letter-spacing:2px;padding:4px 6px;border-bottom:1px solid rgba(0,200,80,0.15);}
+#lb-table td{padding:5px 6px;color:#8899aa;border-bottom:1px solid rgba(255,255,255,0.04);}
+#lb-table tr.me td{color:#ffe040;font-weight:bold;}
+#lb-table tr.top1 td{color:#00ff64;}
+.lb-rank{font-family:'Orbitron',monospace;font-size:13px;color:#00ff64;margin:10px 0 18px;letter-spacing:2px;}
+#name-input{background:rgba(0,20,10,0.8);border:1px solid rgba(0,200,80,0.4);color:#0f0;font-family:'Share Tech Mono',monospace;font-size:16px;text-align:center;padding:10px 18px;border-radius:6px;width:200px;letter-spacing:3px;text-transform:uppercase;outline:none;margin:14px 0;}
+#name-input:focus{border-color:rgba(0,255,80,0.7);box-shadow:0 0 16px rgba(0,255,80,0.15);}
 body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.035) 2px,rgba(0,0,0,0.035) 4px);pointer-events:none;z-index:1001;}
 #vignette{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(0,0,0,0.88) 100%);pointer-events:none;z-index:1000;}
 .overlay{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(145deg,rgba(0,5,15,0.97),rgba(0,2,8,0.98));backdrop-filter:blur(20px);font-family:'Share Tech Mono',monospace;text-align:center;border-radius:12px;z-index:99;border:1px solid rgba(0,200,80,0.2);box-shadow:0 0 80px rgba(0,0,0,0.9),0 0 30px rgba(0,200,80,0.08),inset 0 1px 0 rgba(255,255,255,0.04);}
@@ -49,6 +59,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   <div class="panel-divider" style="margin-bottom:20px;"></div>
   <button onclick="startGame()" class="glow-btn" style="display:block;width:100%;margin-bottom:10px;">INICIAR MISIÓN</button>
   <button onclick="showLevelSelect()" class="ghost-btn" style="display:block;width:100%;margin-bottom:10px;">SELECCIONAR NIVEL</button>
+  <button onclick="openLeaderboard(null,null)" class="ghost-btn" style="display:block;width:100%;margin-bottom:10px;">🏆 RANKING GLOBAL</button>
   <button id="mute-btn" onclick="toggleMute()" class="ghost-btn" style="padding:6px 20px;font-size:14px;">🔊</button>
 </div>
 
@@ -82,6 +93,36 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   <button id="mb" class="glow-btn"></button>
 </div>
 
+<!-- NAME MODAL -->
+<div id="name-modal">
+  <div style="font-family:'Orbitron',monospace;font-size:9px;color:#f80;letter-spacing:5px;margin-bottom:8px;opacity:0.85;">OPERACIÓN: ÉXODO SOLAR</div>
+  <div style="font-family:'Orbitron',monospace;font-size:18px;color:#00ff64;letter-spacing:4px;margin-bottom:6px;">REGISTRAR PILOTO</div>
+  <div style="font-size:11px;color:#556677;margin-bottom:16px;letter-spacing:1px;">Ingresa tu nombre para el ranking global</div>
+  <div class="panel-divider" style="margin-bottom:16px;"></div>
+  <input id="name-input" type="text" maxlength="12" placeholder="CALLSIGN" autocomplete="off" spellcheck="false">
+  <div style="margin-top:6px;">
+    <button onclick="submitScore()" class="glow-btn" style="font-size:12px;padding:12px 36px;">ENVIAR →</button>
+  </div>
+  <div style="margin-top:10px;">
+    <button onclick="skipToLeaderboard()" class="ghost-btn" style="font-size:11px;">Ver ranking sin registrar</button>
+  </div>
+</div>
+
+<!-- LEADERBOARD OVERLAY -->
+<div id="lb-overlay">
+  <div style="font-family:'Orbitron',monospace;font-size:9px;color:#f80;letter-spacing:5px;margin-bottom:8px;opacity:0.85;">HALL OF FAME</div>
+  <div style="font-family:'Orbitron',monospace;font-size:18px;color:#00ff64;letter-spacing:4px;margin-bottom:6px;">RANKING GLOBAL</div>
+  <div id="lb-player-rank" class="lb-rank"></div>
+  <div class="panel-divider" style="margin-bottom:10px;"></div>
+  <div style="max-height:260px;overflow-y:auto;margin-bottom:16px;">
+    <table id="lb-table">
+      <thead><tr><th>#</th><th>PILOTO</th><th>SCORE</th><th>NVL</th><th>DIFIC.</th></tr></thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+  </div>
+  <button id="lb-close-btn" class="glow-btn" style="font-size:12px;padding:12px 36px;"></button>
+</div>
+
 <script>
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
@@ -89,7 +130,6 @@ const W=480,H=600;
 canvas.width=W;canvas.height=H;
 const isMobile=()=>window.matchMedia('(hover:none) and (pointer:coarse)').matches;
 function scaleCanvas(){
-  if(!isMobile())return;
   const s=Math.min(window.innerWidth/W,window.innerHeight/H);
   canvas.style.width=Math.floor(W*s)+'px';
   canvas.style.height=Math.floor(H*s)+'px';
@@ -671,11 +711,16 @@ function drawHUD(){
   // Level / difficulty center
   ctx.textAlign='center';ctx.fillStyle='rgba(100,110,160,0.6)';ctx.font='8px monospace';ctx.fillText('NVL '+currentLevel+' · '+L.subtitle,W/2,14);
   ctx.fillStyle=D.col;ctx.shadowColor=D.col;ctx.shadowBlur=8;ctx.font='bold 11px monospace';ctx.fillText(D.label,W/2,30);ctx.shadowBlur=0;
-  // Pause icon (two bars when playing, triangle when paused)
-  const pCol=gameState==='paused'?'#00ff64':'rgba(0,200,80,0.45)';
-  ctx.fillStyle=pCol;
-  if(gameState==='paused'){ctx.beginPath();ctx.moveTo(W-79,10);ctx.lineTo(W-79,30);ctx.lineTo(W-63,20);ctx.closePath();ctx.fill();}
-  else{ctx.fillRect(W-79,10,6,20);ctx.fillRect(W-69,10,6,20);}
+  // Pause button — background box + icon
+  const isPaused=gameState==='paused';
+  const pbx=W-88,pby=4,pbw=36,pbh=34;
+  ctx.fillStyle=isPaused?'rgba(0,255,100,0.15)':'rgba(0,60,20,0.35)';
+  ctx.fillRect(pbx,pby,pbw,pbh);
+  ctx.strokeStyle=isPaused?'rgba(0,255,100,0.7)':'rgba(0,200,80,0.3)';
+  ctx.lineWidth=1;ctx.strokeRect(pbx,pby,pbw,pbh);
+  ctx.fillStyle=isPaused?'#00ff64':'rgba(0,220,90,0.75)';
+  if(isPaused){ctx.beginPath();ctx.moveTo(pbx+11,pby+8);ctx.lineTo(pbx+11,pby+26);ctx.lineTo(pbx+27,pby+17);ctx.closePath();ctx.fill();}
+  else{ctx.fillRect(pbx+11,pby+8,6,18);ctx.fillRect(pbx+21,pby+8,6,18);}
   // Lives
   ctx.textAlign='right';ctx.fillStyle='rgba(160,0,0,0.45)';ctx.font='8px monospace';ctx.fillText('VIDAS',W-10,13);
   for(let i=0;i<3;i++){if(i<lives){ctx.shadowColor='#ff4444';ctx.shadowBlur=12;}else ctx.shadowBlur=0;ctx.fillStyle=i<lives?'#ff4444':'rgba(60,0,0,0.5)';ctx.font='17px sans-serif';ctx.textAlign='right';ctx.fillText('♥',W-9-i*22,32);}ctx.shadowBlur=0;
@@ -848,7 +893,7 @@ function runEndingScene(){
       ctx.fillStyle='#0f0';ctx.font='13px monospace';ctx.fillText('Chuck Hazard ha llegado.',W/2,H*.23);
       ctx.fillStyle='#aaa';ctx.font='12px monospace';ctx.fillText('La humanidad tiene un nuevo hogar.',W/2,H*.28);
       ctx.globalAlpha=1;
-      if(textAlpha>=1&&!msgShown){msgShown=true;setTimeout(()=>{cancelAnimationFrame(animId);const isNew=score>highScore;if(isNew){highScore=score;saveHS(highScore);}showMsg('🌍 CHUCK HAZARD LO LOGRÓ',(isNew?'<span style="color:#ff0">★ NUEVO RÉCORD ★</span><br>':'')+'Un planeta verde, con agua limpia,<br>bajo un sol que no se expande.<br><br>Score final: '+score,'JUGAR DE NUEVO',()=>startGame());},3000);}
+      if(textAlpha>=1&&!msgShown){msgShown=true;setTimeout(()=>{cancelAnimationFrame(animId);const isNew=score>highScore;if(isNew){highScore=score;saveHS(highScore);}showNameModal(score,currentLevel,difficulty);},3000);}
     }
     if(!msgShown)animId=requestAnimationFrame(frame);
   }
@@ -894,7 +939,7 @@ function runDeathSequence(dx,dy){
     sparks.forEach(s=>{s.x+=s.vx;s.y+=s.vy;s.vy+=.05;s.vx*=.97;const sa=Math.max(0,1-prog*1.6);ctx.globalAlpha=sa;ctx.fillStyle=s.col;ctx.fillRect(s.x-1.5,s.y-1.5,3,3);});
     ctx.globalAlpha=1;drawHUD();t++;
     if(t<max){animId=requestAnimationFrame(frame);}
-    else{cancelAnimationFrame(animId);gameState='over';const isNew=score>highScore;if(isNew){highScore=score;saveHS(highScore);}showMsg('MISIÓN FALLIDA',(isNew?'<span style="color:#ff0">★ NUEVO RÉCORD ★</span><br>':'')+'Score: '+score+'<br>Mejor: '+highScore+'<br><br><span style="font-size:11px;color:#555;cursor:pointer;text-decoration:underline;" onclick="showMenu()">⬅ Menú principal</span>','REINTENTAR',()=>startGame());}
+    else{cancelAnimationFrame(animId);gameState='over';const isNew=score>highScore;if(isNew){highScore=score;saveHS(highScore);}showNameModal(score,currentLevel,difficulty);}
   }
   animId=requestAnimationFrame(frame);
 }
@@ -995,12 +1040,99 @@ function loop(){
 // ── INPUT ─────────────────────────────────────────────────────
 const getR=()=>canvas.getBoundingClientRect();
 canvas.addEventListener('mousemove',e=>{const r=getR();mousePos.x=(e.clientX-r.left)*(W/r.width);mousePos.y=(e.clientY-r.top)*(H/r.height);});
-canvas.addEventListener('mousedown',e=>{if(e.button!==0)return;const r=getR(),cx=(e.clientX-r.left)*(W/r.width),cy=(e.clientY-r.top)*(H/r.height);if(cx>=W-82&&cx<=W-60&&cy>=4&&cy<=36&&(gameState==='playing'||gameState==='paused')){togglePause();return;}mouseDown=true;});
+canvas.addEventListener('mousedown',e=>{if(e.button!==0)return;const r=getR(),cx=(e.clientX-r.left)*(W/r.width),cy=(e.clientY-r.top)*(H/r.height);if(cx>=W-88&&cx<=W-52&&cy>=4&&cy<=38&&(gameState==='playing'||gameState==='paused')){togglePause();return;}mouseDown=true;});
 canvas.addEventListener('mouseup',()=>mouseDown=false);
 canvas.addEventListener('mouseleave',()=>mouseDown=false);
 document.addEventListener('keydown',e=>{keys[e.key]=true;if([' ','ArrowUp','ArrowDown'].includes(e.key))e.preventDefault();if((e.key==='Escape'||e.key==='p'||e.key==='P')&&(gameState==='playing'||gameState==='paused'))togglePause();});
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
-canvas.addEventListener('touchstart',e=>{const r=getR(),t=e.touches[0],cx=(t.clientX-r.left)*(W/r.width),cy=(t.clientY-r.top)*(H/r.height);if(cx>=W-82&&cx<=W-60&&cy>=4&&cy<=36&&(gameState==='playing'||gameState==='paused')){togglePause();return;}mousePos.x=cx;mousePos.y=cy;mouseDown=true;},{passive:true});
+canvas.addEventListener('touchstart',e=>{const r=getR(),t=e.touches[0],cx=(t.clientX-r.left)*(W/r.width),cy=(t.clientY-r.top)*(H/r.height);if(cx>=W-88&&cx<=W-52&&cy>=4&&cy<=38&&(gameState==='playing'||gameState==='paused')){togglePause();return;}mousePos.x=cx;mousePos.y=cy;mouseDown=true;},{passive:true});
 canvas.addEventListener('touchmove',e=>{const r=getR(),t=e.touches[0];mousePos.x=(t.clientX-r.left)*(W/r.width);mousePos.y=(t.clientY-r.top)*(H/r.height);},{passive:true});
 canvas.addEventListener('touchend',()=>mouseDown=false,{passive:true});
+
+// ── LEADERBOARD (Firebase REST) ───────────────────────────────
+// Replace with your Firebase Realtime Database URL (Project Settings → Realtime Database)
+const FB_URL='https://chuck-hazard-scores-default-rtdb.firebaseio.com/scores';
+let _pendingScore=null,_pendingLevel=null,_pendingDiff=null;
+
+async function fetchScores(){
+  try{
+    const r=await fetch(FB_URL+'.json?orderBy="score"&limitToLast=100');
+    if(!r.ok)return[];
+    const data=await r.json();
+    if(!data)return[];
+    return Object.entries(data).map(([k,v])=>({id:k,...v})).sort((a,b)=>b.score-a.score).slice(0,20);
+  }catch{return[];}
+}
+
+async function postScore(name,sc,lvl,diff){
+  try{
+    await fetch(FB_URL+'.json',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:name.toUpperCase().trim().slice(0,12),score:sc,level:lvl,diff,ts:Date.now()})});
+  }catch{}
+}
+
+function showNameModal(sc,lvl,diff){
+  _pendingScore=sc;_pendingLevel=lvl;_pendingDiff=diff;
+  const nm=document.getElementById('name-modal');
+  const inp=document.getElementById('name-input');
+  inp.value='';
+  nm.style.display='block';
+  setTimeout(()=>inp.focus(),80);
+  inp.onkeydown=e=>{if(e.key==='Enter')submitScore();};
+}
+
+async function submitScore(){
+  const nm=document.getElementById('name-modal');
+  const inp=document.getElementById('name-input');
+  const name=(inp.value||'').trim();
+  if(!name){inp.focus();return;}
+  nm.style.display='none';
+  await postScore(name,_pendingScore,_pendingLevel,_pendingDiff);
+  openLeaderboard(_pendingScore,name);
+}
+
+function skipToLeaderboard(){
+  document.getElementById('name-modal').style.display='none';
+  openLeaderboard(null,null);
+}
+
+async function openLeaderboard(myScore,myName){
+  const overlay=document.getElementById('lb-overlay');
+  const body=document.getElementById('lb-body');
+  const rankEl=document.getElementById('lb-player-rank');
+  const closeBtn=document.getElementById('lb-close-btn');
+  body.innerHTML='<tr><td colspan="5" style="color:#334455;padding:20px;text-align:center;letter-spacing:2px;">CARGANDO...</td></tr>';
+  rankEl.textContent='';
+  overlay.style.display='block';
+  const rows=await fetchScores();
+  body.innerHTML='';
+  let myRank=null;
+  rows.forEach((row,i)=>{
+    const tr=document.createElement('tr');
+    const isMe=myName&&myScore&&row.name===myName.toUpperCase().trim()&&row.score===myScore;
+    if(isMe)myRank=i+1;
+    if(i===0)tr.className='top1';
+    if(isMe)tr.className=(i===0?'top1 ':'')+'me';
+    tr.innerHTML=`<td>${i+1}</td><td>${row.name||'???'}</td><td>${row.score}</td><td>${row.level||'?'}</td><td style="font-size:9px;opacity:0.6;">${row.diff||'?'}</td>`;
+    body.appendChild(tr);
+  });
+  if(rows.length===0)body.innerHTML='<tr><td colspan="5" style="color:#334455;padding:20px;text-align:center;">SIN REGISTROS AÚN</td></tr>';
+  if(myRank)rankEl.textContent='ERES EL #'+myRank+' DEL MUNDO';
+  else if(myScore)rankEl.textContent='SCORE: '+myScore;
+  const isFromGame=_pendingScore!==null;
+  closeBtn.textContent=isFromGame?'REINTENTAR':'CERRAR';
+  closeBtn.onclick=()=>{
+    overlay.style.display='none';
+    _pendingScore=null;
+    if(isFromGame)startGame();
+  };
+}
+
+function gameOverWithLeaderboard(title,bodyHtml,isWin){
+  document.getElementById('msg').style.display='none';
+  showNameModal(score,currentLevel,difficulty);
+  // store win state for retry button
+  _pendingIsWin=isWin;
+}
+let _pendingIsWin=false;
 </script>
