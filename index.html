@@ -850,9 +850,9 @@ function renderMenu(){
   ['cadete','heroe','leyenda'].forEach(d=>{
     const D=DIFF[d],btn=document.createElement('button'),active=difficulty===d;
     btn.textContent=D.label;
-    btn.style.cssText=`font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;padding:10px 16px;border:1px solid ${active?D.col:'rgba(255,255,255,0.08)'};background:${active?D.col+'18':'rgba(255,255,255,0.02)'};color:${active?D.col:'#333'};cursor:pointer;border-radius:6px;transition:all 0.2s;${active?`box-shadow:0 0 18px ${D.col}44;`:''}`;
-    btn.onmouseenter=()=>{if(difficulty!==d){btn.style.borderColor='rgba(255,255,255,0.15)';btn.style.color='#666';}};
-    btn.onmouseleave=()=>{if(difficulty!==d){btn.style.borderColor='rgba(255,255,255,0.08)';btn.style.color='#333';}};
+    btn.style.cssText=`font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;padding:10px 16px;border:2px solid ${active?D.col:'rgba(255,255,255,0.15)'};background:${active?'#000':'rgba(255,255,255,0.02)'};color:${active?D.col:'#778899'};cursor:pointer;border-radius:6px;transition:all 0.2s;${active?`box-shadow:0 0 22px ${D.col}66,inset 0 0 12px rgba(0,0,0,0.8);text-shadow:0 0 10px ${D.col};`:''}`;
+    btn.onmouseenter=()=>{if(difficulty!==d){btn.style.borderColor='rgba(255,255,255,0.35)';btn.style.color='#ccd8e0';}};
+    btn.onmouseleave=()=>{if(difficulty!==d){btn.style.borderColor='rgba(255,255,255,0.15)';btn.style.color='#778899';}};
     btn.onclick=()=>{difficulty=d;renderMenu();};el.appendChild(btn);
   });
   const desc={cadete:'Ideal para aprender.',heroe:'El desafío real.',leyenda:'Sin piedad. Solo los mejores.'};
