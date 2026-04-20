@@ -684,17 +684,19 @@ function fb(x,y,vx,vy,w,h,col,blob=false,homing=false){bullets.push({x,y,vx,vy,w
 
 // ── POWERUPS ──────────────────────────────────────────────────
 function spawnPowerup(x,y){
-  if(Math.random()>.3)return;
-  const wts=[3,3,3,2,1,1,2,2,2];let r=Math.random()*19,cum=0,tp=PW_KEYS[0];
+  if(Math.random()>.52)return; // 48% drop rate (was 30%)
+  // weights: rapid,shield,multi,laser,nuke,timewarp,homing,spread,life
+  // spread gets 5x weight — metralleta de abanico es la estrella
+  const wts=[4,3,4,1,1,1,2,5,2];let r=Math.random()*23,cum=0,tp=PW_KEYS[0];
   for(let i=0;i<PW_KEYS.length;i++){cum+=wts[i];if(r<cum){tp=PW_KEYS[i];break;}}
-  powerups.push({x,y,type:tp,vy:1.5,life:380});
+  powerups.push({x,y,type:tp,vy:1.5,life:420});
 }
 function applyPower(tp){
   const p=player;
-  if(tp==='rapid')p.rapidFire=620;else if(tp==='shield')p.shield=420;else if(tp==='multi')p.multiShot=540;
-  else if(tp==='laser')p.laser=460;else if(tp==='nuke')nukeAll();else if(tp==='timewarp')p.timewarp=500;
-  else if(tp==='homing')p.homing=720;else if(tp==='spread')p.spread=580;
-  else if(tp==='life'){if(lives<3)lives++;else score+=200;}
+  if(tp==='rapid')p.rapidFire=680;else if(tp==='shield')p.shield=480;else if(tp==='multi')p.multiShot=600;
+  else if(tp==='laser')p.laser=400;else if(tp==='nuke')nukeAll();else if(tp==='timewarp')p.timewarp=520;
+  else if(tp==='homing')p.homing=780;else if(tp==='spread')p.spread=720;
+  else if(tp==='life'){if(lives<3)lives++;else score+=300;}
 }
 function nukeAll(){
   enemies.forEach(e=>{if(!e.isBoss){score+=30;explode(e.x,e.y,'#f44',12);}});
@@ -1079,8 +1081,8 @@ function loop(){
     shootTimer=fireRate;
   }
   if(shootTimer>0)shootTimer--;if(p.rapidFire>0)p.rapidFire--;if(p.multiShot>0)p.multiShot--;if(p.spread>0)p.spread--;if(p.timewarp>0)p.timewarp--;if(p.homing>0)p.homing--;if(p.shield>0)p.shield--;
-  if(!bossSpawned){enemyTimer++;if(enemyTimer>=spawnRate){spawnWave();enemyTimer=0;spawnRate=Math.max(78,spawnRate-1);}kamikazeTimer++;const kRate=Math.max(85,220-currentLevel*18);if(kamikazeTimer>=kRate){spawnKamikaze();kamikazeTimer=0;}}
-  powerupTimer++;if(powerupTimer>400){spawnPowerup(40+Math.random()*(W-80),-20);powerupTimer=0;}
+  if(!bossSpawned){enemyTimer++;if(enemyTimer>=spawnRate){spawnWave();enemyTimer=0;spawnRate=Math.max(82,spawnRate-1);}kamikazeTimer++;const kRate=Math.max(110,260-currentLevel*18);if(kamikazeTimer>=kRate){spawnKamikaze();kamikazeTimer=0;}}
+  powerupTimer++;if(powerupTimer>260){spawnPowerup(40+Math.random()*(W-80),-20);powerupTimer=0;}
   enemies.forEach(e=>{if(e.isBoss)updateBossAI(e,tw);else updateEnemyAI(e,tw);});
   bullets.forEach(b=>{
     if(b.homing&&!b.friendly&&Date.now()-b.born<3000){const tx=player.x-b.x,ty=player.y-b.y,dist=Math.hypot(tx,ty);if(dist>5){b.vx+=tx/dist*.18;b.vy+=ty/dist*.18;}const spd=Math.hypot(b.vx,b.vy);if(spd>4){b.vx=b.vx/spd*4;b.vy=b.vy/spd*4;}}
