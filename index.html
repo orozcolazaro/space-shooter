@@ -1,7 +1,19 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#000;display:flex;justify-content:center;overflow:hidden;font-family:'Share Tech Mono',monospace;}
+body{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow:hidden;font-family:'Share Tech Mono',monospace;height:100vh;width:100vw;}
+#c{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;}
+#mobile-controls{display:none;position:fixed;bottom:0;left:0;width:100%;height:130px;z-index:500;background:linear-gradient(to top,rgba(0,0,0,0.55),transparent);pointer-events:none;}
+.dpad{position:absolute;left:16px;bottom:16px;width:132px;height:132px;pointer-events:auto;}
+.dpad button{position:absolute;width:44px;height:44px;background:rgba(0,200,80,0.12);border:1px solid rgba(0,200,80,0.3);color:rgba(0,255,100,0.75);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:8px;-webkit-tap-highlight-color:transparent;user-select:none;}
+.dpad button:active{background:rgba(0,200,80,0.28);}
+.btn-up{top:0;left:44px;}
+.btn-left{top:44px;left:0;}
+.btn-center{top:44px;left:44px;font-size:9px!important;opacity:0.25;pointer-events:none;}
+.btn-right{top:44px;left:88px;}
+.btn-down{top:88px;left:44px;}
+.fire-btn{position:absolute;right:24px;bottom:20px;width:90px;height:90px;background:rgba(200,0,0,0.15);border:2px solid rgba(255,60,60,0.45);border-radius:50%;color:rgba(255,100,100,0.85);font-size:11px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent;user-select:none;box-shadow:0 0 20px rgba(255,40,40,0.15);}
+.fire-btn:active{background:rgba(200,0,0,0.35);box-shadow:0 0 30px rgba(255,40,40,0.35);}
 body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.035) 2px,rgba(0,0,0,0.035) 4px);pointer-events:none;z-index:1001;}
 #vignette{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(0,0,0,0.88) 100%);pointer-events:none;z-index:1000;}
 .overlay{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(145deg,rgba(0,5,15,0.97),rgba(0,2,8,0.98));backdrop-filter:blur(20px);font-family:'Share Tech Mono',monospace;text-align:center;border-radius:12px;z-index:99;border:1px solid rgba(0,200,80,0.2);box-shadow:0 0 80px rgba(0,0,0,0.9),0 0 30px rgba(0,200,80,0.08),inset 0 1px 0 rgba(255,255,255,0.04);}
@@ -19,6 +31,16 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 </style>
 <canvas id="c"></canvas>
 <div id="vignette"></div>
+<div id="mobile-controls">
+  <div class="dpad">
+    <button class="btn-up" id="mc-up">▲</button>
+    <button class="btn-left" id="mc-left">◀</button>
+    <button class="btn-center">✦</button>
+    <button class="btn-right" id="mc-right">▶</button>
+    <button class="btn-down" id="mc-down">▼</button>
+  </div>
+  <div class="fire-btn" id="mc-fire">FIRE</div>
+</div>
 
 <!-- INTRO -->
 <div id="intro" style="position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at 50% 65%,#000d1e 0%,#000 65%);z-index:200;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;">
@@ -86,6 +108,16 @@ const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
 const W=480,H=600;
 canvas.width=W;canvas.height=H;
+const isTouchDevice=()=>window.matchMedia('(hover:none)').matches;
+function scaleCanvas(){
+  const ctrlH=isTouchDevice()?134:0;
+  const s=Math.min(window.innerWidth/W,(window.innerHeight-ctrlH)/H);
+  canvas.style.width=Math.floor(W*s)+'px';
+  canvas.style.height=Math.floor(H*s)+'px';
+}
+scaleCanvas();
+window.addEventListener('resize',scaleCanvas);
+if(isTouchDevice())document.getElementById('mobile-controls').style.display='block';
 
 // ── WIRE INTRO BUTTON ────────────────────────────────────────
 document.getElementById('intro-btn').addEventListener('click',function(){
@@ -539,7 +571,7 @@ function updateEnemyAI(e,tw){
   if(tier===0){e.y+=e.speed*tw;e.x+=Math.sin(t*2+e.phase)*.5*tw;}
   else if(tier===1){e.y+=e.speed*.85*tw;e.x+=Math.sin(t*1.8+e.phase)*2.5*tw;if(e.x<e.w/2||e.x>W-e.w/2)e.phase+=Math.PI;}
   else{ai.patternTimer+=tw;if(ai.patternTimer>90){ai.sinDir*=-1;ai.patternTimer=0;}e.y+=e.speed*.65*tw;e.x+=ai.sinDir*2.2*tw;e.x=Math.max(e.w/2,Math.min(W-e.w/2,e.x));}
-  if(!e.shoot)return;ai.timer-=tw;if(ai.timer>0)return;
+  if(!e.shoot)return;ai.timer-=tw;if(ai.timer>0)return;if(e.y-e.h/2<45)return;
   const base=e.drawType,px=player.x,py=player.y;
   if(base==='green'){if(tier===0)fb(e.x,e.y+e.h/2,0,(4+currentLevel*.15)*tw,3,8,bCol);else if(tier===1){const a=Math.atan2(py-e.y,px-e.x);fb(e.x,e.y,Math.cos(a)*3,Math.sin(a)*3+2,3,8,bCol);}else[-0.3,0,0.3].forEach(a=>fb(e.x,e.y+e.h/2,Math.sin(a)*3,(4+currentLevel*.15)*tw,4,10,bCol));ai.timer=D.fireRate*(tier===2?1.3:tier===1?.85:1)+Math.random()*35;}
   else if(base==='squid'){if(tier===0)fb(e.x,e.y+e.h/2,0,(3+currentLevel*.1)*tw,8,8,bCol,true);else if(tier===1){[-1,1].forEach(d=>fb(e.x,e.y+e.h/2,d*1.5,(4+currentLevel*.15)*tw,6,8,bCol,true));}else for(let i=0;i<5;i++){const a=-Math.PI*.5+((i-2)/4)*Math.PI*.8;fb(e.x,e.y+e.h/2,Math.cos(a)*3.5,Math.sin(a)*3.5+1,7,7,bCol,true);}ai.timer=D.fireRate*(tier===2?1.5:tier===1?.9:1.1)+Math.random()*35;}
@@ -907,7 +939,7 @@ function loop(){
   ctx.globalAlpha=1;if(nukeAnim)drawNuke();drawF117(p.x,p.y,p.shield);drawActiveOnShip(p);
   bullets=bullets.filter(b=>{
     if(!b.friendly)return true;let hit=false;
-    enemies=enemies.filter(e=>{if(!hit&&Math.abs(b.x-e.x)<e.w/2+b.w&&Math.abs(b.y-e.y)<e.h/2+b.h){e.hp--;hit=true;if(e.hp<=0){score+=e.isBoss?500:20;explode(e.x,e.y,e.isBoss?'#f80':'#4f8',e.isBoss?20:10);sfxExplode(e.isBoss);if(e.isBoss)onBossKilled();else spawnPowerup(e.x,e.y);return false;}}return true;});
+    enemies=enemies.filter(e=>{if(!hit&&e.y-e.h/2>42&&Math.abs(b.x-e.x)<e.w/2+b.w&&Math.abs(b.y-e.y)<e.h/2+b.h){e.hp--;hit=true;if(e.hp<=0){score+=e.isBoss?500:20;explode(e.x,e.y,e.isBoss?'#f80':'#4f8',e.isBoss?20:10);sfxExplode(e.isBoss);if(e.isBoss)onBossKilled();else spawnPowerup(e.x,e.y);return false;}}return true;});
     return !hit;
   });
   bullets=bullets.filter(b=>{
@@ -939,4 +971,19 @@ document.addEventListener('keyup',e=>{keys[e.key]=false;});
 canvas.addEventListener('touchstart',e=>{const r=getR(),t=e.touches[0];mousePos.x=(t.clientX-r.left)*(W/r.width);mousePos.y=(t.clientY-r.top)*(H/r.height);mouseDown=true;},{passive:true});
 canvas.addEventListener('touchmove',e=>{const r=getR(),t=e.touches[0];mousePos.x=(t.clientX-r.left)*(W/r.width);mousePos.y=(t.clientY-r.top)*(H/r.height);},{passive:true});
 canvas.addEventListener('touchend',()=>mouseDown=false,{passive:true});
+// Mobile D-pad controls
+const mcMap={'mc-up':'ArrowUp','mc-left':'ArrowLeft','mc-right':'ArrowRight','mc-down':'ArrowDown'};
+Object.entries(mcMap).forEach(([id,key])=>{
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true;},{passive:false});
+  el.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false;},{passive:false});
+  el.addEventListener('touchcancel',e=>{keys[key]=false;},{passive:true});
+});
+const mcFire=document.getElementById('mc-fire');
+if(mcFire){
+  mcFire.addEventListener('touchstart',e=>{e.preventDefault();mouseDown=true;},{passive:false});
+  mcFire.addEventListener('touchend',e=>{e.preventDefault();mouseDown=false;},{passive:false});
+  mcFire.addEventListener('touchcancel',()=>mouseDown=false,{passive:true});
+}
 </script>
