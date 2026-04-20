@@ -1081,7 +1081,7 @@ function loop(){
     shootTimer=fireRate;
   }
   if(shootTimer>0)shootTimer--;if(p.rapidFire>0)p.rapidFire--;if(p.multiShot>0)p.multiShot--;if(p.spread>0)p.spread--;if(p.timewarp>0)p.timewarp--;if(p.homing>0)p.homing--;if(p.shield>0)p.shield--;
-  if(!bossSpawned){enemyTimer++;if(enemyTimer>=spawnRate){spawnWave();enemyTimer=0;spawnRate=Math.max(82,spawnRate-1);}kamikazeTimer++;const kRate=Math.max(110,260-currentLevel*18);if(kamikazeTimer>=kRate){spawnKamikaze();kamikazeTimer=0;}}
+  if(!bossSpawned){enemyTimer++;if(enemyTimer>=spawnRate){spawnWave();enemyTimer=0;spawnRate=Math.max(82,spawnRate-1);}kamikazeTimer++;const kRate=Math.max(900,1260-currentLevel*60);if(kamikazeTimer>=kRate){spawnKamikaze();kamikazeTimer=0;}}
   powerupTimer++;if(powerupTimer>260){spawnPowerup(40+Math.random()*(W-80),-20);powerupTimer=0;}
   enemies.forEach(e=>{if(e.isBoss)updateBossAI(e,tw);else updateEnemyAI(e,tw);});
   bullets.forEach(b=>{
