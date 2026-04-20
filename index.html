@@ -100,6 +100,7 @@ window.addEventListener('resize',scaleCanvas);
 // ── WIRE INTRO BUTTON ────────────────────────────────────────
 document.getElementById('intro-btn').addEventListener('click',function(){
   document.getElementById('intro').style.display='none';
+  initAudio();playMenuMusic();
   showMenu();
 });
 
@@ -107,15 +108,15 @@ document.getElementById('intro-btn').addEventListener('click',function(){
 let score=0,lives=3,currentLevel=1,waveCount=0,bossSpawned=false,bossDefeated=false;
 let player,bullets=[],enemies=[],particles=[],powerups=[],stars=[];
 let keys={},mousePos={x:W/2,y:H-60},mouseDown=false;
-let shootTimer=0,enemyTimer=0,spawnRate=130,powerupTimer=0;
+let shootTimer=0,enemyTimer=0,spawnRate=130,powerupTimer=0,kamikazeTimer=0;
 let animId=null,nukeAnim=null,gameState='idle';
 let highScore=0,difficulty='cadete',playerHitThisFrame=false;
 
 // ── CONFIG ────────────────────────────────────────────────────
 const DIFF={
-  cadete: {spd:0.8,fire:0.18,spawnRate:130,fireRate:100,col:'#0f0',label:'CADETE'},
-  heroe:  {spd:1.2,fire:0.28,spawnRate:100,fireRate:75, col:'#ff0',label:'HÉROE'},
-  leyenda:{spd:1.7,fire:0.42,spawnRate:70, fireRate:50, col:'#f44',label:'LEYENDA'},
+  cadete: {spd:1.1,fire:0.18,spawnRate:110,fireRate:95, col:'#0f0',label:'CADETE'},
+  heroe:  {spd:1.6,fire:0.28,spawnRate:85, fireRate:68, col:'#ff0',label:'HÉROE'},
+  leyenda:{spd:2.2,fire:0.42,spawnRate:58, fireRate:44, col:'#f44',label:'LEYENDA'},
 };
 const LEVELS=[
   {num:1,name:'Zona Helion',    subtitle:'Los Verdes',   bg:'#000510',sc:'rgba(180,220,255,',et:'green',    bn:'REINA VERDE',      waves:18,bossHp:40,
@@ -427,6 +428,7 @@ function drawShipAt(x,y,tilt=0){
 // ── DRAW ENEMIES ──────────────────────────────────────────────
 function drawEnemy(e){
   ctx.save();ctx.translate(e.x,e.y);
+  if(e.kamikaze&&player){ctx.rotate(Math.atan2(player.y-e.y,player.x-e.x)-Math.PI/2);}
   const t=Date.now()*.003,tier=e.tier||0,sc=e.isBoss?2.3:1;
   ctx.scale(sc,sc);
   const base=e.drawType;
@@ -436,6 +438,7 @@ function drawEnemy(e){
   else if(base==='locust')_dLocust(tier,t);
   else if(base==='renegade')_dRenegade(tier,t);
   else if(base==='light')_dLight(tier,t);
+  else if(base==='kamikaze')_dKamikaze(t);
   if(e.maxHp>2||e.isBoss){ctx.scale(1/sc,1/sc);ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(-e.w/2,-e.h/2-10,e.w,5);ctx.fillStyle=e.isBoss?'#f00':tier===2?'#fa0':'#0f0';ctx.fillRect(-e.w/2,-e.h/2-10,e.w*(e.hp/e.maxHp),5);}
   ctx.restore();
 }
@@ -502,6 +505,19 @@ function _dLight(t2,t){
   for(let i=0;i<2;i++){const pr=((t*.5+i*.5)%1)*cr*2.5;ctx.strokeStyle=`rgba(200,200,255,${(1-pr/(cr*2.5))*.35})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,pr,0,Math.PI*2);ctx.stroke();}
 }
 
+function _dKamikaze(t){
+  const p=.4+Math.sin(t*6)*.6;
+  // Engine blast
+  const eg=ctx.createRadialGradient(0,12,0,0,12,18);eg.addColorStop(0,`rgba(255,${140+Math.floor(p*80)},0,${.7+p*.3})`);eg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=eg;ctx.beginPath();ctx.arc(0,12,18,0,Math.PI*2);ctx.fill();
+  // Hull — sharp forward wedge
+  const hg=ctx.createLinearGradient(0,-16,0,12);hg.addColorStop(0,'#cc2200');hg.addColorStop(.5,'#881100');hg.addColorStop(1,'#440800');
+  ctx.fillStyle=hg;ctx.beginPath();ctx.moveTo(0,-16);ctx.lineTo(11,8);ctx.lineTo(5,12);ctx.lineTo(0,8);ctx.lineTo(-5,12);ctx.lineTo(-11,8);ctx.closePath();ctx.fill();
+  // Wing accents
+  ctx.fillStyle='rgba(255,120,0,0.35)';ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(8,6);ctx.lineTo(4,9);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(-8,6);ctx.lineTo(-4,9);ctx.closePath();ctx.fill();
+  // Nose core
+  const ng=ctx.createRadialGradient(0,-12,0,0,-12,5);ng.addColorStop(0,`rgba(255,240,100,${.85+p*.15})`);ng.addColorStop(1,'rgba(255,80,0,0)');ctx.fillStyle=ng;ctx.beginPath();ctx.arc(0,-12,5,0,Math.PI*2);ctx.fill();
+}
+
 // ── POWER ICONS ───────────────────────────────────────────────
 function drawPowerIcon(cx,cy,type,alpha){
   ctx.save();ctx.globalAlpha=alpha;const c=PW_COLS[type]||'#fff';
@@ -545,6 +561,7 @@ function mkEnemy(x,y,opts={}){
 }
 function updateEnemyAI(e,tw){
   const ai=e.ai,D=DIFF[difficulty],tier=e.tier||0,t=Date.now()*.001;
+  if(e.kamikaze){const a=Math.atan2(player.y-e.y,player.x-e.x);e.x+=Math.cos(a)*e.speed*tw*1.9;e.y+=Math.sin(a)*e.speed*tw*1.9;return;}
   const bCol=(['#0f0','#a0f','#f06','#fa0','#f44','#ccf'])[Math.min(currentLevel-1,5)];
   if(tier===0){e.y+=e.speed*tw;e.x+=Math.sin(t*2+e.phase)*.5*tw;}
   else if(tier===1){e.y+=e.speed*.85*tw;e.x+=Math.sin(t*1.8+e.phase)*2.5*tw;if(e.x<e.w/2||e.x>W-e.w/2)e.phase+=Math.PI;}
@@ -588,9 +605,9 @@ function spawnPowerup(x,y){
 }
 function applyPower(tp){
   const p=player;
-  if(tp==='rapid')p.rapidFire=400;else if(tp==='shield')p.shield=240;else if(tp==='multi')p.multiShot=350;
-  else if(tp==='laser')p.laser=300;else if(tp==='nuke')nukeAll();else if(tp==='timewarp')p.timewarp=400;
-  else if(tp==='homing')p.homing=400;else if(tp==='spread')p.spread=350;
+  if(tp==='rapid')p.rapidFire=620;else if(tp==='shield')p.shield=420;else if(tp==='multi')p.multiShot=540;
+  else if(tp==='laser')p.laser=460;else if(tp==='nuke')nukeAll();else if(tp==='timewarp')p.timewarp=500;
+  else if(tp==='homing')p.homing=720;else if(tp==='spread')p.spread=580;
   else if(tp==='life'){if(lives<3)lives++;else score+=200;}
 }
 function nukeAll(){
@@ -616,6 +633,15 @@ function spawnRandom(){for(let i=0;i<5+currentLevel;i++)enemies.push(mkEnemy(30+
 function spawnSides(){for(let i=0;i<5;i++){enemies.push(mkEnemy(20,-20-i*35,{vx:.7}));enemies.push(mkEnemy(W-20,-20-i*35,{vx:-.7}));}}
 function spawnZigzag(){for(let i=0;i<8;i++)enemies.push(mkEnemy(i%2===0?80:W-80,-20-i*30,{vx:i%2===0?.8:-.8}));}
 function spawnCircle(){for(let i=0;i<8;i++){const a=(i/8)*Math.PI*2;enemies.push(mkEnemy(W/2+Math.cos(a)*80,-60+Math.sin(a)*80,{type:'wave'}));}}
+function spawnKamikaze(){
+  const n=1+Math.floor(Math.random()*(currentLevel>3?3:2));
+  const spd=DIFF[difficulty].spd*2.5+Math.random()*.8;
+  for(let i=0;i<n;i++){
+    const e=mkEnemy(40+Math.random()*(W-80),-25-i*45,{shoot:false,speed:spd,tier:0});
+    e.kamikaze=true;e.drawType='kamikaze';
+    enemies.push(e);
+  }
+}
 
 // ── NUKE ANIM ─────────────────────────────────────────────────
 function drawNuke(){
@@ -666,13 +692,13 @@ function drawHUD(){
   }
   // Powerup bar
   const pwList=[];
-  if(player.rapidFire>0)pwList.push({col:'#ffe040',t:'RAPID',v:player.rapidFire,max:400});
-  if(player.multiShot>0)pwList.push({col:'#ff40ff',t:'MULTI',v:player.multiShot,max:350});
-  if(player.spread>0)pwList.push({col:'#ffee88',t:'SPREAD',v:player.spread,max:350});
-  if(player.laser>0)pwList.push({col:'#ff8020',t:'LASER',v:player.laser,max:300});
-  if(player.timewarp>0)pwList.push({col:'#8888ff',t:'WARP',v:player.timewarp,max:400});
-  if(player.homing>0)pwList.push({col:'#00ff88',t:'HOMING',v:player.homing,max:400});
-  if(player.shield>0)pwList.push({col:'#00ccff',t:'SHIELD',v:player.shield,max:240});
+  if(player.rapidFire>0)pwList.push({col:'#ffe040',t:'RAPID',v:player.rapidFire,max:620});
+  if(player.multiShot>0)pwList.push({col:'#ff40ff',t:'MULTI',v:player.multiShot,max:540});
+  if(player.spread>0)pwList.push({col:'#ffee88',t:'SPREAD',v:player.spread,max:580});
+  if(player.laser>0)pwList.push({col:'#ff8020',t:'LASER',v:player.laser,max:460});
+  if(player.timewarp>0)pwList.push({col:'#8888ff',t:'WARP',v:player.timewarp,max:500});
+  if(player.homing>0)pwList.push({col:'#00ff88',t:'HOMING',v:player.homing,max:720});
+  if(player.shield>0)pwList.push({col:'#00ccff',t:'SHIELD',v:player.shield,max:420});
   if(pwList.length&&!boss){
     const barY=H-22;ctx.fillStyle='rgba(0,3,10,0.9)';ctx.fillRect(0,barY,W,22);
     const sepG=ctx.createLinearGradient(0,0,W,0);sepG.addColorStop(0,'rgba(0,0,0,0)');sepG.addColorStop(0.3,'rgba(255,255,255,0.07)');sepG.addColorStop(0.7,'rgba(255,255,255,0.07)');sepG.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=sepG;ctx.fillRect(0,barY,W,1);
@@ -748,7 +774,7 @@ function initLevel(lvl){
   player={x:W/2,y:H-60,w:36,h:28,speed:5,shield:0,rapidFire:0,multiShot:0,laser:0,timewarp:0,homing:0,spread:0};
   bullets=[];enemies=[];particles=[];powerups=[];
   stars=Array.from({length:130},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random()*2+0.3,sp:Math.random()*1.5+0.4,tc:Math.random()*Math.PI*2,ts:.4+Math.random()*1.2,typ:Math.random()<.04?2:Math.random()<.25?1:0}));
-  shootTimer=0;enemyTimer=0;powerupTimer=0;
+  shootTimer=0;enemyTimer=0;powerupTimer=0;kamikazeTimer=0;
   playBattleMusic(lvl);gameState='playing';loop();
 }
 
@@ -908,12 +934,12 @@ function loop(){
   }
   const fireRate=p.rapidFire>0?6:16;
   if((keys[' ']||keys['z']||mouseDown)&&shootTimer<=0&&p.laser<=0){
-    sfxShoot();bullets.push({x:p.x,y:p.y-28,vy:-11,w:4,h:14,col:'#f00',friendly:true,homing:p.homing>0,rifle:true});
-    if(p.multiShot>0||p.spread>0){const extra=p.spread>0?5:2;for(let i=1;i<=extra;i++){const vx=Math.sin(p.spread>0?(i/(extra+1)-.5)*1.2:0)*(p.spread>0?3:1.5)*i;bullets.push({x:p.x-10,y:p.y-20,vy:-11,vx,w:3,h:10,col:'#f00',friendly:true,rifle:true});if(p.spread>0||i<=2)bullets.push({x:p.x+10,y:p.y-20,vy:-11,vx:-vx,w:3,h:10,col:'#f00',friendly:true,rifle:true});}}
+    sfxShoot();bullets.push({x:p.x,y:p.y-28,vy:-17,w:4,h:14,col:'#f00',friendly:true,homing:p.homing>0,rifle:true});
+    if(p.multiShot>0||p.spread>0){const extra=p.spread>0?5:2;for(let i=1;i<=extra;i++){const vx=Math.sin(p.spread>0?(i/(extra+1)-.5)*1.2:0)*(p.spread>0?3:1.5)*i;bullets.push({x:p.x-10,y:p.y-20,vy:-17,vx,w:3,h:10,col:'#f00',friendly:true,rifle:true});if(p.spread>0||i<=2)bullets.push({x:p.x+10,y:p.y-20,vy:-11,vx:-vx,w:3,h:10,col:'#f00',friendly:true,rifle:true});}}
     shootTimer=fireRate;
   }
   if(shootTimer>0)shootTimer--;if(p.rapidFire>0)p.rapidFire--;if(p.multiShot>0)p.multiShot--;if(p.spread>0)p.spread--;if(p.timewarp>0)p.timewarp--;if(p.homing>0)p.homing--;if(p.shield>0)p.shield--;
-  if(!bossSpawned){enemyTimer++;if(enemyTimer>=spawnRate){spawnWave();enemyTimer=0;spawnRate=Math.max(60,spawnRate-1);}}
+  if(!bossSpawned){enemyTimer++;if(enemyTimer>=spawnRate){spawnWave();enemyTimer=0;spawnRate=Math.max(60,spawnRate-1);}kamikazeTimer++;const kRate=Math.max(85,220-currentLevel*18);if(kamikazeTimer>=kRate){spawnKamikaze();kamikazeTimer=0;}}
   powerupTimer++;if(powerupTimer>400){spawnPowerup(40+Math.random()*(W-80),-20);powerupTimer=0;}
   enemies.forEach(e=>{if(e.isBoss)updateBossAI(e,tw);else updateEnemyAI(e,tw);});
   bullets.forEach(b=>{
