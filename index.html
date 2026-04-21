@@ -1040,7 +1040,7 @@ function runEndingScene(){
 
 // ── ON BOSS KILLED ────────────────────────────────────────────
 function onBossKilled(){
-  if(bossDefeated)return;bossDefeated=true;bossSpawned=false;score+=1000;addScorePop(W/2,H/2-20,'⭐ +1000 BONUS!','#ffaa00');
+  if(bossDefeated)return;bossDefeated=true;bossSpawned=false;score+=1000;addScorePop(W/2,H/2-20,'⭐ +1000 BONUS!','#ffaa00');bullets=bullets.filter(b=>b.friendly);player.shield=9999;
   for(let i=0;i<5;i++)setTimeout(()=>explode(100+Math.random()*280,50+Math.random()*200,'#f80',16),i*120);
   playVictoryMusic();
   setTimeout(()=>{
