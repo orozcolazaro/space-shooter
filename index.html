@@ -100,6 +100,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   <div class="panel-divider" style="margin-bottom:18px;"></div>
   <div id="ms" style="font-size:12px;margin-bottom:26px;line-height:2.1;max-width:340px;color:#c0d4e4;"></div>
   <button id="mb" class="glow-btn"></button>
+  <button id="mb2" class="glow-btn" style="display:none;margin-top:10px;background:rgba(0,0,0,0.6);border-color:rgba(0,200,80,0.4);color:#88ccaa;font-size:11px;padding:10px 28px;"></button>
 </div>
 
 <!-- NAME MODAL -->
@@ -151,6 +152,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   </div>
   <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
     <button id="lb-menu-btn" class="ghost-btn" style="font-size:11px;padding:10px 20px;">← MENÚ PRINCIPAL</button>
+    <button id="lb-retry-lvl-btn" class="ghost-btn" style="font-size:11px;padding:10px 20px;display:none;">↺ REINTENTAR NIVEL</button>
     <button id="lb-close-btn" class="glow-btn" style="font-size:12px;padding:12px 28px;"></button>
   </div>
 </div>
@@ -890,10 +892,13 @@ function showBossWarn(name,cb){
   const el=document.getElementById('boss-warn');document.getElementById('boss-warn-text').textContent='⚠ '+name+' ⚠';el.style.display='block';let t=0;
   const iv=setInterval(()=>{t++;el.style.opacity=t%2===0?1:.15;if(t>8){clearInterval(iv);el.style.display='none';cb();}},220);
 }
-function showMsg(title,sub,btnTxt,btnFn){
+function showMsg(title,sub,btnTxt,btnFn,btn2Txt,btn2Fn){
   ['story','levelselect'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('mt').textContent=title;document.getElementById('ms').innerHTML=sub;
-  const b=document.getElementById('mb');b.textContent=btnTxt;b.onclick=btnFn;document.getElementById('msg').style.display='block';
+  const b=document.getElementById('mb');b.textContent=btnTxt;b.onclick=btnFn;
+  const b2=document.getElementById('mb2');
+  if(btn2Txt){b2.textContent=btn2Txt;b2.onclick=btn2Fn;b2.style.display='block';}else{b2.style.display='none';}
+  document.getElementById('msg').style.display='block';
 }
 
 // ── GAME FLOW ─────────────────────────────────────────────────
@@ -1228,7 +1233,8 @@ async function handleGameOver(sc,lvl,diff){
       'Score: '+sc+'<br>Mejor: '+highScore+
       '<br><br><span style="color:#f80;font-size:11px;">No alcanzaste el Top '+TOP_N+' global.</span>'+
       '<br><span style="font-size:11px;color:#88bbdd;cursor:pointer;text-decoration:underline;" onclick="showMenu()">⬅ Menú principal</span>',
-      'REINTENTAR',()=>startGame());
+      'REINTENTAR NIVEL',()=>startLevel(lvl),
+      'COMENZAR DE NUEVO',()=>startGame());
   }
 }
 
@@ -1264,6 +1270,7 @@ async function openLeaderboard(myScore,myName){
   const rankEl=document.getElementById('lb-player-rank');
   const closeBtn=document.getElementById('lb-close-btn');
   const menuBtn=document.getElementById('lb-menu-btn');
+  const retryLvlBtn=document.getElementById('lb-retry-lvl-btn');
   body.innerHTML='<tr><td colspan="5" style="color:#6699bb;padding:20px;text-align:center;letter-spacing:2px;">CARGANDO...</td></tr>';
   rankEl.textContent='';overlay.style.display='block';
   const rows=(await fetchAllScores()).slice(0,TOP_N);
@@ -1282,8 +1289,9 @@ async function openLeaderboard(myScore,myName){
   if(myRank)rankEl.textContent='ERES EL #'+myRank+' DEL MUNDO';
   else if(myScore)rankEl.textContent='SCORE: '+myScore;
   const isFromGame=_pendingScore!==null;
-  closeBtn.textContent=isFromGame?'REINTENTAR':'CERRAR';
+  closeBtn.textContent=isFromGame?'COMENZAR DE NUEVO':'CERRAR';
   closeBtn.onclick=()=>closeLbOverlay(isFromGame);
   menuBtn.onclick=()=>closeLbOverlay(false);
+  if(isFromGame){retryLvlBtn.style.display='inline-block';retryLvlBtn.onclick=()=>{document.getElementById('lb-overlay').style.display='none';_pendingScore=null;startLevel(_pendingLevel||1);};}else{retryLvlBtn.style.display='none';}
 }
 </script>
