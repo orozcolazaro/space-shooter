@@ -330,7 +330,24 @@ const DUST4=Array.from({length:35},()=>({x:Math.random()*W,y:Math.random()*H,r:.
 function drawBG(lvl,tw){
   const L=LEVELS[lvl-1],p=PLN[lvl-1];
   ctx.fillStyle=L.bg;ctx.fillRect(0,0,W,H);
-  drawExpansionSun(lvl);
+  if(lvl!==6)drawExpansionSun(lvl);
+  if(lvl===6){
+    // Vega star — warm blue-white dwarf seen from the habitable planet surface
+    const vx=W*.08,vy=70,vr=18;
+    const glow=ctx.createRadialGradient(vx,vy,vr*.4,vx,vy,vr*9);
+    glow.addColorStop(0,'rgba(200,220,255,0.18)');glow.addColorStop(.3,'rgba(160,200,255,0.09)');glow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=glow;ctx.beginPath();ctx.arc(vx,vy,vr*9,0,Math.PI*2);ctx.fill();
+    const corona=ctx.createRadialGradient(vx,vy,vr*.6,vx,vy,vr*2.2);
+    corona.addColorStop(0,'rgba(220,235,255,0.55)');corona.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=corona;ctx.beginPath();ctx.arc(vx,vy,vr*2.2,0,Math.PI*2);ctx.fill();
+    const disk=ctx.createRadialGradient(vx-vr*.25,vy-vr*.25,vr*.1,vx,vy,vr);
+    disk.addColorStop(0,'#ffffff');disk.addColorStop(.35,'#ddeeff');disk.addColorStop(.8,'#aaccff');disk.addColorStop(1,'#7799cc');
+    ctx.fillStyle=disk;ctx.beginPath();ctx.arc(vx,vy,vr,0,Math.PI*2);ctx.fill();
+    // Lens flare streaks
+    ctx.save();ctx.globalAlpha=0.12;ctx.strokeStyle='#cce4ff';ctx.lineWidth=1.5;
+    [0,Math.PI/3,Math.PI*2/3].forEach(a=>{ctx.beginPath();ctx.moveTo(vx+Math.cos(a)*vr,vy+Math.sin(a)*vr*0.6);ctx.lineTo(vx+Math.cos(a)*vr*5.5,vy+Math.sin(a)*vr*3.5);ctx.stroke();ctx.beginPath();ctx.moveTo(vx-Math.cos(a)*vr,vy-Math.sin(a)*vr*0.6);ctx.lineTo(vx-Math.cos(a)*vr*5.5,vy-Math.sin(a)*vr*3.5);ctx.stroke();});
+    ctx.restore();
+  }
   // Nebula wisps per level
   if(lvl===2){const t=Date.now()*.0002;[[60,120,'rgba(80,0,160,0.055)'],[350,200,'rgba(100,0,200,0.04)'],[180,350,'rgba(60,0,130,0.05)']].forEach(([nx,ny,nc])=>{const ng=ctx.createRadialGradient(nx,ny,0,nx,ny,90+Math.sin(t)*15);ng.addColorStop(0,nc);ng.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=ng;ctx.beginPath();ctx.ellipse(nx,ny,90,55,t*.3,0,Math.PI*2);ctx.fill();});}
   if(lvl===3){const t=Date.now()*.00015;[[80,180,'rgba(160,0,40,0.05)'],[380,280,'rgba(200,0,60,0.04)']].forEach(([nx,ny,nc])=>{const ng=ctx.createRadialGradient(nx,ny,0,nx,ny,80);ng.addColorStop(0,nc);ng.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=ng;ctx.beginPath();ctx.ellipse(nx,ny,80,50,t*.2,0,Math.PI*2);ctx.fill();});}
