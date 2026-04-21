@@ -334,7 +334,7 @@ function drawBG(lvl,tw){
   // Nebula wisps per level
   if(lvl===2){const t=Date.now()*.0002;[[60,120,'rgba(80,0,160,0.055)'],[350,200,'rgba(100,0,200,0.04)'],[180,350,'rgba(60,0,130,0.05)']].forEach(([nx,ny,nc])=>{const ng=ctx.createRadialGradient(nx,ny,0,nx,ny,90+Math.sin(t)*15);ng.addColorStop(0,nc);ng.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=ng;ctx.beginPath();ctx.ellipse(nx,ny,90,55,t*.3,0,Math.PI*2);ctx.fill();});}
   if(lvl===3){const t=Date.now()*.00015;[[80,180,'rgba(160,0,40,0.05)'],[380,280,'rgba(200,0,60,0.04)']].forEach(([nx,ny,nc])=>{const ng=ctx.createRadialGradient(nx,ny,0,nx,ny,80);ng.addColorStop(0,nc);ng.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=ng;ctx.beginPath();ctx.ellipse(nx,ny,80,50,t*.2,0,Math.PI*2);ctx.fill();});}
-  if(lvl===6){const t=Date.now()*.0001;[[240,300,'rgba(100,100,200,0.07)'],[160,450,'rgba(80,80,180,0.05)'],[320,200,'rgba(120,100,220,0.06)']].forEach(([nx,ny,nc])=>{const ng=ctx.createRadialGradient(nx,ny,0,nx,ny,100);ng.addColorStop(0,nc);ng.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=ng;ctx.beginPath();ctx.ellipse(nx,ny,100,65,t*.15,0,Math.PI*2);ctx.fill();});}
+  if(lvl===5){const t=Date.now()*.0001;[[240,300,'rgba(100,100,200,0.07)'],[160,450,'rgba(80,80,180,0.05)'],[320,200,'rgba(120,100,220,0.06)']].forEach(([nx,ny,nc])=>{const ng=ctx.createRadialGradient(nx,ny,0,nx,ny,100);ng.addColorStop(0,nc);ng.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=ng;ctx.beginPath();ctx.ellipse(nx,ny,100,65,t*.15,0,Math.PI*2);ctx.fill();});}
   const cut=Math.floor(stars.length*.6),nt=Date.now()*.001;
   function drawStar(s){s.y+=s.sp*tw;if(s.y>H){s.y=0;s.x=Math.random()*W;}const tw2=.15+s.s*.18+Math.sin(s.tc+nt*s.ts)*.08,a=Math.max(0,Math.min(1,tw2));if(s.typ===2){ctx.fillStyle=L.sc+a+')';ctx.shadowColor=L.sc+'1)';ctx.shadowBlur=6;ctx.fillRect(s.x,s.y,s.s,s.s);ctx.fillStyle=`rgba(255,255,255,${a*.4})`;ctx.fillRect(s.x-s.s*2,s.y+s.s*.5,s.s*5,1);ctx.fillRect(s.x+s.s*.5,s.y-s.s*2,1,s.s*5);ctx.shadowBlur=0;}else if(s.typ===1){ctx.fillStyle=L.sc+a+')';ctx.beginPath();ctx.arc(s.x,s.y,s.s*.6,0,Math.PI*2);ctx.fill();}else{ctx.fillStyle=L.sc+a+')';ctx.fillRect(s.x,s.y,s.s,s.s);}}
   for(let i=0;i<cut;i++)drawStar(stars[i]);
@@ -368,14 +368,14 @@ function drawBG(lvl,tw){
     drawSun(W*.1,55,32,0);drawSun(W*.28,95,19,1);
     drawGasGiant(W*.65,160,28,p.rot,'#8a4a10','#5a2a00','#cc8030',false,null);
   }else if(lvl===5){
+    p.diskAngle+=0.006*tw;
+    drawBlackHole(W*.5,H*.22,38,p.diskAngle,tw);
+  }else{
     p.rot2+=0.0015*tw;p.mAngle+=0.006*tw;
     const px=W*.5,py=85,pr=62,mx=px+Math.cos(p.mAngle)*104,my=py+Math.sin(p.mAngle)*104*.28;
     if(Math.sin(p.mAngle)<0)drawMoon(mx,my,17,'#7aaa88');
     drawHabitablePlanet(px,py,pr,p.rot,p.rot2);
     if(Math.sin(p.mAngle)>=0)drawMoon(mx,my,17,'#7aaa88');
-  }else{
-    p.diskAngle+=0.006*tw;
-    drawBlackHole(W*.5,H*.22,38,p.diskAngle,tw);
   }
   for(let i=cut;i<stars.length;i++)drawStar(stars[i]);
 }
