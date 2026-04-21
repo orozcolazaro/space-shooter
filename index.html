@@ -722,7 +722,11 @@ function spawnPowerup(x,y){
   powerups.push({x,y,type:tp,vy:1.5,life:420});
 }
 const scorePops=[];
-function addScorePop(x,y,txt,col){scorePops.push({x,y,txt,col:col||'#ffe040',life:70,vy:-1.2});}
+function addScorePop(x,y,txt,col){
+  // Clamp so popup never starts above HUD or off canvas
+  const sy=Math.max(80,Math.min(y,H-40));
+  scorePops.push({x:Math.max(30,Math.min(x,W-30)),y:sy,txt,col:col||'#ffe040',life:95,vy:-1.4});
+}
 function applyPower(tp){
   const p=player,pts={rapid:60,shield:60,multi:90,laser:120,nuke:250,timewarp:80,homing:120,spread:90,life:0}[tp]||0;
   if(tp==='rapid')p.rapidFire=680;else if(tp==='shield')p.shield=480;else if(tp==='multi')p.multiShot=600;
@@ -1035,7 +1039,7 @@ function runEndingScene(){
 
 // ── ON BOSS KILLED ────────────────────────────────────────────
 function onBossKilled(){
-  if(bossDefeated)return;bossDefeated=true;bossSpawned=false;score+=1000;
+  if(bossDefeated)return;bossDefeated=true;bossSpawned=false;score+=1000;addScorePop(W/2,H/2-20,'⭐ +1000 BONUS!','#ffaa00');
   for(let i=0;i<5;i++)setTimeout(()=>explode(100+Math.random()*280,50+Math.random()*200,'#f80',16),i*120);
   playVictoryMusic();
   setTimeout(()=>{
@@ -1147,7 +1151,7 @@ function loop(){
   powerups.forEach(pw=>{pw.y+=pw.vy*tw;pw.life--;drawPowerIcon(pw.x,pw.y,pw.type,.9);});
   particles.forEach(pt=>{pt.x+=pt.vx;pt.y+=pt.vy;pt.vy+=.06;pt.life--;ctx.globalAlpha=pt.life/60;ctx.fillStyle=pt.col;ctx.fillRect(pt.x-2,pt.y-2,4,4);});
   ctx.globalAlpha=1;if(nukeAnim)drawNuke();drawF117(p.x,p.y,p.shield);drawActiveOnShip(p);
-  scorePops.forEach(sp=>{sp.x+=(Math.random()-.5)*.3;sp.y+=sp.vy;sp.life--;const a=sp.life/70;ctx.globalAlpha=a;ctx.shadowColor=sp.col;ctx.shadowBlur=8;ctx.fillStyle=sp.col;ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText(sp.txt,sp.x,sp.y);});
+  scorePops.forEach(sp=>{sp.y+=sp.vy;sp.life--;const a=Math.min(1,sp.life/60);ctx.globalAlpha=a;ctx.font='bold 16px monospace';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,0.85)';ctx.strokeText(sp.txt,sp.x,sp.y);ctx.shadowColor=sp.col;ctx.shadowBlur=10;ctx.fillStyle=sp.col;ctx.fillText(sp.txt,sp.x,sp.y);ctx.shadowBlur=0;});
   scorePops.splice(0,scorePops.length,...scorePops.filter(s=>s.life>0));ctx.shadowBlur=0;ctx.globalAlpha=1;
   bullets=bullets.filter(b=>{
     if(!b.friendly)return true;let hit=false;
