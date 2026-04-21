@@ -969,6 +969,7 @@ function runVictoryAnim(lvl,onDone){
 
 // ── ENDING SCENE ──────────────────────────────────────────────
 function runEndingScene(){
+  ['menu','msg','story','name-modal','lb-overlay','boss-warn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   gameState='ending';cancelAnimationFrame(animId);stopMusic();
   initAudio();
   const t0=AC.currentTime;
